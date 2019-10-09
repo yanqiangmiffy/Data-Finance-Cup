@@ -16,8 +16,6 @@ import ipykernel
 import tensorflow as tf
 from sklearn.metrics import roc_auc_score
 
-print("111111")
-
 
 def train_w2v(text_list=None, output_vector='data/w2v.txt'):
     """
@@ -82,14 +80,17 @@ sequences = tokenizer.texts_to_sequences(texts)
 data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
 
 # 类别编码
-x_train = data[:len(train)]
+X = data[:len(train)]
 x_test = data[len(train):]
-print(x_train.shape)
-print(x_train)
+print(X.shape)
+print(X)
 # y_train = to_categorical(train['target'].values)
-y_train = train['target'].values
-y_train = y_train.astype(np.int32)
-print(y_train)
+y = train['target'].values
+y = y.astype(np.int32)
+print(y)
+
+X_fea = np.load(open('tmp/fea_train.npy', 'rb'))
+X_fea_test = np.load(open('tmp/fea_test.npy', 'rb'))
 
 
 # 创建embedding_layer
@@ -132,6 +133,8 @@ def create_text_cnn():
     pool2 = MaxPool1D(3)(conv2)
     conv3 = Conv1D(128, 5, activation='relu', padding='same')(pool2)
     pool3 = MaxPool1D(3)(conv3)
+    flat = Flatten()(pool3)
+
     convs = []
     # for kernel_size in range(1, 5):
     #     conv = BatchNormalization()(embedding_sequences)
@@ -140,14 +143,21 @@ def create_text_cnn():
     # poolings = [GlobalMaxPooling1D()(conv) for conv in convs]
     # x_concat = Concatenate()(poolings)
 
-    flat = Flatten()(pool3)
-    dense = Dense(128, activation='relu')(flat)
-    preds = Dense(1, activation='sigmoid')(dense)
-    model = Model(sequence_input, preds)
-    return model
+    fea_input = Input(shape=(100,))
+    fea_dense = BatchNormalization()(fea_input)
+    fea_dense = Dense(64, activation='relu')(fea_dense)
+
+    merged = concatenate([flat, fea_dense])
+    merged = Dropout(0.5)(merged)
+    # merged = BatchNormalization()(merged)
+
+    dense = Dense(128, activation='relu')(merged)
+    pred = Dense(1, activation='sigmoid')(dense)
+    merged = Model([sequence_input, fea_input], pred)
+    return merged
 
 
-train_pred = np.zeros((len(train), 1))
+train_pred = np.zeros((len(train, ), 1))
 test_pred = np.zeros((len(test), 1))
 
 
@@ -191,12 +201,16 @@ class roc_auc_callback(Callback):
 
 
 skf = StratifiedKFold(n_splits=5, random_state=52, shuffle=True)
-for i, (train_index, valid_index) in enumerate(skf.split(x_train, y_train)):
+for i, (train_index, valid_index) in enumerate(skf.split(X, y)):
     print("n@:{}fold".format(i + 1))
-    X_train = x_train[train_index]
-    X_valid = x_train[valid_index]
-    y_tr = y_train[train_index]
-    y_val = y_train[valid_index]
+    X_train = X[train_index]
+    X_valid = X[valid_index]
+
+    X_fea_train = X_fea[train_index]
+    X_fea_valid = X_fea[valid_index]
+
+    y_train = y[train_index]
+    y_valid = y[valid_index]
 
     model = create_text_cnn()
     model.compile(loss='binary_crossentropy',
@@ -207,18 +221,18 @@ for i, (train_index, valid_index) in enumerate(skf.split(x_train, y_train)):
     checkpoint = ModelCheckpoint(filepath='models/cnn_text_{}.h5'.format(i + 1),
                                  monitor='val_loss',
                                  verbose=1, save_best_only=True)
-    history = model.fit(X_train, y_tr,
-                        validation_data=(X_valid, y_val),
+    history = model.fit([X_train,X_fea_train], y_train,
+                        validation_data=([X_valid,X_fea_valid], y_valid),
                         epochs=10, batch_size=64,
-                        callbacks=[checkpoint, roc_auc_callback(training_data=(X_train, y_tr),
-                                                                validation_data=(X_valid, y_val))])
+                        callbacks=[checkpoint, roc_auc_callback(training_data=([X_train,X_fea_train], y_train),
+                                                                validation_data=([X_valid,X_fea_valid], y_valid))])
 
     # model.load_weights('models/cnn_text.h5')
-    train_pred[valid_index, :] = model.predict(X_valid)
-    test_pred += model.predict(x_test)
+    train_pred[valid_index, :] = model.predict([X_valid,X_fea_valid])
+    test_pred += model.predict([x_test,X_fea_test])
 
 test['target'] = test_pred / 5
-test[['id', 'target']].to_csv('result/w300_cnn.csv', index=None)
+test[['id', 'target']].to_csv('result/fea_cnn.csv', index=None)
 
 # 训练数据预测结果
 # 概率
