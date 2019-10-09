@@ -218,7 +218,7 @@ for i, (train_index, valid_index) in enumerate(skf.split(x_train, y_train)):
     test_pred += model.predict(x_test)
 
 test['target'] = test_pred / 5
-test[['id', 'target']].to_csv('result/qiang_nn.csv', index=None)
+test[['id', 'target']].to_csv('result/cnn.csv', index=None)
 
 # 训练数据预测结果
 # 概率
