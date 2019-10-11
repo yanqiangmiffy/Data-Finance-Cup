@@ -1,6 +1,5 @@
 from keras.layers import *
 from tensorflow import set_random_seed
-
 import jieba
 import multiprocessing
 import pandas as pd
@@ -62,7 +61,7 @@ df = pd.concat([train, test], sort=False)
 
 # 训练词向量
 df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
-no_fea = ['id', 'target', 'certValidStop', 'certValidBegin', 'isNew']
+no_fea = ['id', 'target', 'certValidStop', 'certValidBegin']
 feas = [fea for fea in df.columns if fea not in no_fea]
 print("正在将生成文本..")
 df['token_text'] = df.apply(lambda row: to_text(row, feas), axis=1)
@@ -119,7 +118,8 @@ def create_embedding(word_index, w2v_file):
             embedding_matrix[i] = embedding_vector
     embedding_layer = Embedding(len(word_index) + 1,
                                 EMBEDDING_DIM,
-                                input_length=MAX_SEQUENCE_LENGTH, trainable=True)
+                                input_length=MAX_SEQUENCE_LENGTH,
+                                trainable=False)
     return embedding_layer
 
 

@@ -32,20 +32,12 @@ def train_w2v(text_list=None, output_vector='data/w2v.txt'):
     model.wv.save_word2vec_format(output_vector, binary=False)
 
 
-# sample.csv
-# test_new.csv
-# train.csv
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 train=shuffle(train)
 test = pd.read_csv("new_data/test.csv")
 
-# 数据处理 复制target为1文本
-# index = train.target == 1
-# print(index)
-# train[index]
-# train.['text'] = train[index]['text'].apply(lambda x: x +'。'+ x)
 # 全量数据
 train['id'] = [i for i in range(len(train))]
 test['target'] = [-1 for i in range(len(test))]

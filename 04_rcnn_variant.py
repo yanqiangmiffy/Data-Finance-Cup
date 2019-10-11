@@ -27,25 +27,22 @@ def train_w2v(text_list=None, output_vector='data/w2v.txt'):
     """
     print("正在训练词向量。。。")
     corpus = [text.split() for text in text_list]
-    model = Word2Vec(corpus, size=100, window=5, min_count=1, workers=multiprocessing.cpu_count())
+    model = Word2Vec(corpus,
+                     size=200,
+                     window=5,
+                     min_count=1,
+                     iter=20,
+                     workers=multiprocessing.cpu_count())
     # 保存词向量
     model.wv.save_word2vec_format(output_vector, binary=False)
 
 
-# sample.csv
-# test_new.csv
-# train.csv
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 train = shuffle(train)
 test = pd.read_csv("new_data/test.csv")
 
-# 数据处理 复制target为1文本
-# index = train.target == 1
-# print(index)
-# train[index]
-# train.['text'] = train[index]['text'].apply(lambda x: x +'。'+ x)
 # 全量数据
 train['id'] = [i for i in range(len(train))]
 test['target'] = [-1 for i in range(len(test))]
@@ -66,7 +63,7 @@ def to_text(row):
 df['token_text'] = df.apply(lambda row: to_text(row), axis=1)
 df[['id', 'token_text']].to_csv('tmp/df.csv', index=None)
 texts = df['token_text'].values.tolist()
-# train_w2v(texts)
+train_w2v(texts)
 
 # 构建词汇表
 tokenizer = Tokenizer(filters='|')
@@ -76,7 +73,7 @@ print(word_index)
 print("词语数量个数：{}".format(len(word_index)))
 
 # 数据
-EMBEDDING_DIM = 100
+EMBEDDING_DIM = 200
 MAX_SEQUENCE_LENGTH = len(feas)
 
 sequences = tokenizer.texts_to_sequences(texts)
@@ -118,7 +115,8 @@ def create_embedding(word_index, w2v_file):
             embedding_matrix[i] = embedding_vector
     embedding_layer = Embedding(len(word_index) + 1,
                                 EMBEDDING_DIM,
-                                input_length=MAX_SEQUENCE_LENGTH, trainable=False)
+                                input_length=MAX_SEQUENCE_LENGTH,
+                                trainable=False)
     return embedding_layer
 
 
@@ -224,7 +222,7 @@ test['target'] = test_pred / 5
 test[['id', 'target']].to_csv('result/qiang_nn.csv', index=None)
 # 提交结果
 test['target'] = test_pred / 5
-test[['id', 'target']].to_csv('result/04_rcnn.csv'.format(score), index=None)
+test[['id', 'target']].to_csv('result/04_{}_rcnn.csv'.format(score), index=None)
 # 训练数据预测结果
 # 概率
 # oof_df = pd.DataFrame(train_pred)

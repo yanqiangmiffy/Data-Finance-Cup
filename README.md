@@ -6,6 +6,13 @@
 - xgb 0.72
 - cnn_em_dim_100:0.742
 
+------
+
+新数据
+
+------
+- rcnn 0.74
+- cnn 0.70
 ## 相关资料
 
 1. https://github.com/TingNie/CreditForecast/blob/master/code.ipynb
