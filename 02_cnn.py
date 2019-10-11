@@ -17,6 +17,7 @@ from sklearn.metrics import *
 import ipykernel
 import tensorflow as tf
 from sklearn.metrics import roc_auc_score
+from sklearn.utils import shuffle
 
 # 设置随机种子
 SEED = 2019
@@ -48,10 +49,11 @@ def to_text(row, columns):
     return " ".join(text)
 
 
-train = pd.read_csv("data/train.csv")
-train_target = pd.read_csv('data/train_target.csv')
+train = pd.read_csv("new_data/train.csv")
+train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
-test = pd.read_csv("data/test.csv")
+train = shuffle(train)
+test = pd.read_csv("new_data/test.csv")
 
 # 全量数据
 train['id'] = [i for i in range(len(train))]
@@ -59,17 +61,19 @@ test['target'] = [-1 for i in range(len(test))]
 df = pd.concat([train, test], sort=False)
 
 # 训练词向量
-df['certPeriod'] = df['certBalidStop'] - df['certValidBegin']
-no_fea = ['id', 'target']
+df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
+no_fea = ['id', 'target', 'certValidStop', 'certValidBegin', 'isNew']
 feas = [fea for fea in df.columns if fea not in no_fea]
+print("正在将生成文本..")
 df['token_text'] = df.apply(lambda row: to_text(row, feas), axis=1)
 texts = df['token_text'].values.tolist()
-train_w2v(texts)
+# train_w2v(texts)
 
 # 构建词汇表
-tokenizer = Tokenizer()
+tokenizer = Tokenizer(filters='|')
 tokenizer.fit_on_texts(texts)
 word_index = tokenizer.word_index
+print(word_index)
 print("词语数量个数：{}".format(len(word_index)))
 
 # 数据
@@ -108,13 +112,13 @@ def create_embedding(word_index, w2v_file):
     f.close()
     print("Total %d word vectors in w2v_file" % len(embedding_index))
 
-    embedding_matrix = np.random.random(size=(len(word_index) + 1, EMBEDDING_DIM))
+    embedding_matrix = np.random.random(size=(len(word_index)+1, EMBEDDING_DIM))
     for word, i in word_index.items():
         embedding_vector = embedding_index.get(word)
         if embedding_vector is not None:
             embedding_matrix[i] = embedding_vector
     embedding_layer = Embedding(len(word_index) + 1,
-                                EMBEDDING_DIM, weights=[embedding_matrix],
+                                EMBEDDING_DIM,
                                 input_length=MAX_SEQUENCE_LENGTH, trainable=True)
     return embedding_layer
 
@@ -124,22 +128,22 @@ def create_text_cnn():
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH,), dtype='int32')
     embedding_layer = create_embedding(word_index, 'data/w2v.txt')
     embedding_sequences = embedding_layer(sequence_input)
-    # conv1 = Conv1D(128, 5, activation='relu', padding='same')(embedding_sequences)
-    # pool1 = MaxPool1D(3)(conv1)
-    # conv2 = Conv1D(128, 5, activation='relu', padding='same')(pool1)
-    # pool2 = MaxPool1D(3)(conv2)
-    # conv3 = Conv1D(128, 5, activation='relu', padding='same')(pool2)
-    # pool3 = MaxPool1D(3)(conv3)
-    convs = []
-    for kernel_size in range(1, 5):
-        conv = BatchNormalization()(embedding_sequences)
-        conv = Conv1D(128, kernel_size, activation='relu')(conv)
-        convs.append(conv)
-    poolings = [GlobalMaxPooling1D()(conv) for conv in convs]
-    x_concat = Concatenate()(poolings)
+    conv1 = Conv1D(128, 5, activation='relu', padding='same')(embedding_sequences)
+    pool1 = MaxPool1D(3)(conv1)
+    conv2 = Conv1D(128, 5, activation='relu', padding='same')(pool1)
+    pool2 = MaxPool1D(3)(conv2)
+    conv3 = Conv1D(128, 5, activation='relu', padding='same')(pool2)
+    pool3 = MaxPool1D(3)(conv3)
+    # convs = []
+    # for kernel_size in range(1, 5):
+    #     conv = BatchNormalization()(embedding_sequences)
+    #     conv = Conv1D(128, kernel_size, activation='relu')(conv)
+    #     convs.append(conv)
+    # poolings = [GlobalMaxPooling1D()(conv) for conv in convs]
+    # x_concat = Concatenate()(poolings)
 
-    # flat = Flatten()(x_concat)
-    dense = Dense(128, activation='relu')(x_concat)
+    flat = Flatten()(pool3)
+    dense = Dense(128, activation='relu')(flat)
     pred = Dense(1, activation='sigmoid')(dense)
     model_ = Model(sequence_input, pred)
     return model_
