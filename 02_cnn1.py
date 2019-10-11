@@ -127,22 +127,23 @@ def create_text_cnn():
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH,), dtype='int32')
     embedding_layer = create_embedding(word_index, 'data/w2v.txt')
     embedding_sequences = embedding_layer(sequence_input)
-    conv1 = Conv1D(128, 5, activation='relu', padding='same')(embedding_sequences)
-    pool1 = MaxPool1D(3)(conv1)
-    conv2 = Conv1D(128, 5, activation='relu', padding='same')(pool1)
-    pool2 = MaxPool1D(3)(conv2)
-    conv3 = Conv1D(128, 5, activation='relu', padding='same')(pool2)
-    pool3 = MaxPool1D(3)(conv3)
-    convs = []
-    # for kernel_size in range(1, 5):
-    #     conv = BatchNormalization()(embedding_sequences)
-    #     conv = Conv1D(128, kernel_size, activation='relu')(conv)
-    #     convs.append(conv)
-    # poolings = [GlobalMaxPooling1D()(conv) for conv in convs]
-    # x_concat = Concatenate()(poolings)
+    # conv1 = Conv1D(128, 5, activation='relu', padding='same')(embedding_sequences)
+    # pool1 = MaxPool1D(3)(conv1)
+    # conv2 = Conv1D(128, 5, activation='relu', padding='same')(pool1)
+    # pool2 = MaxPool1D(3)(conv2)
+    # conv3 = Conv1D(128, 5, activation='relu', padding='same')(pool2)
+    # pool3 = MaxPool1D(3)(conv3)
+    # flat = Flatten()(pool3)
+    # dense = Dense(128, activation='relu')(flat)
 
-    flat = Flatten()(pool3)
-    dense = Dense(128, activation='relu')(flat)
+    convs = []
+    for kernel_size in range(1, 5):
+        conv = BatchNormalization()(embedding_sequences)
+        conv = Conv1D(128, kernel_size, activation='relu')(conv)
+        convs.append(conv)
+    poolings = [GlobalMaxPooling1D()(conv) for conv in convs]
+    x_concat = Concatenate()(poolings)
+    dense = Dense(128, activation='relu')(x_concat)
     preds = Dense(1, activation='sigmoid')(dense)
     model = Model(sequence_input, preds)
     return model
@@ -211,7 +212,7 @@ for i, (train_index, valid_index) in enumerate(skf.split(x_train, y_train)):
                                  verbose=1, save_best_only=True)
     history = model.fit(X_train, y_tr,
                         validation_data=(X_valid, y_val),
-                        epochs=5, batch_size=64,
+                        epochs=3, batch_size=64,
                         callbacks=[checkpoint, roc_auc_callback(training_data=(X_train, y_tr),
                                                                 validation_data=(X_valid, y_val))])
 

@@ -13,10 +13,10 @@ import time
 # %%
 
 # 1.读取文件
-train = pd.read_csv("data/train.csv")
-train_target = pd.read_csv('data/train_target.csv')
+train = pd.read_csv("new_data/train.csv")
+train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
-test = pd.read_csv("data/test.csv")
+test = pd.read_csv("new_data/test.csv")
 print(train.shape)
 print(test.shape)
 # 2.合并数据
@@ -54,13 +54,13 @@ stats_df.sort_values('Unique_values', ascending=False)[:30]
 # 特征工程
 # 根据 unique values确定
 
-no_feas = ['id', 'target'] + ['certId', 'bankCard', 'dist', 'residentAddr']
-data['certPeriod'] = data['certBalidStop'] - data['certValidBegin']
-numerical_features = ['certBalidStop', 'certValidBegin', 'lmt', 'age', 'certPeriod']
+no_feas = ['id', 'target'] + ['certId', 'bankCard', 'dist', 'residentAddr','certValidStop', 'certValidBegin']
+data['certPeriod'] = data['certValidStop'] - data['certValidBegin']
+numerical_features = ['certValidStop', 'certValidBegin', 'lmt', 'age', 'certPeriod']
 # data['certBalidStop_certValidBegin_ratio']=data ['certBalidStop']/data['certValidBegin']
 # data['lmt_age_ratio']=data ['lmt']/data['age']
 # data['certPeriod_age_ratio']=data ['certPeriod']/data['age']
-# 
+#
 # data['lmt_age_mul']=data ['lmt']*data['age']
 # data['certPeriod_age_mul']=data ['certPeriod']*data['age']
 
