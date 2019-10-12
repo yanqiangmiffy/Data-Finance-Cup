@@ -16,6 +16,12 @@ import ipykernel
 import tensorflow as tf
 from sklearn.metrics import roc_auc_score
 from sklearn.utils import shuffle
+from tensorflow import set_random_seed
+
+# 设置随机种子
+SEED = 2019
+np.random.seed(SEED)
+set_random_seed(SEED)
 
 
 def train_w2v(text_list=None, output_vector='data/w2v.txt'):
@@ -35,7 +41,7 @@ def train_w2v(text_list=None, output_vector='data/w2v.txt'):
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
-train=shuffle(train)
+train = shuffle(train, random_state=2019)
 test = pd.read_csv("new_data/test.csv")
 
 # 全量数据
@@ -55,8 +61,9 @@ def to_text(row):
     return " ".join(text)
 
 
-df['token_text'] = df.apply(lambda row: to_text(row), axis=1)
-df[['id', 'token_text']].to_csv('tmp/df.csv', index=None)
+# df['token_text'] = df.apply(lambda row: to_text(row), axis=1)
+# df[['id', 'token_text']].to_csv('tmp/df.csv', index=None)
+df = pd.read_csv('tmp/df.csv')
 texts = df['token_text'].values.tolist()
 # train_w2v(texts)
 
@@ -220,12 +227,11 @@ for i, (train_index, valid_index) in enumerate(skf.split(x_train, y_train)):
 score = np.mean(cv_scores)
 print("5折平均分数为：{}".format(score))
 
-
 test['target'] = test_pred / 5
 test[['id', 'target']].to_csv('result/qiang_nn.csv', index=None)
 # 提交结果
 test['target'] = test_pred / 5
-test[['id', 'target']].to_csv('result/w300{}_cnn.csv'.format(score), index=None)
+test[['id', 'target']].to_csv('result/02_cnn1{}_cnn.csv'.format(score), index=None)
 # 训练数据预测结果
 # 概率
 # oof_df = pd.DataFrame(train_pred)

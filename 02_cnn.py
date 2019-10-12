@@ -17,56 +17,41 @@ import ipykernel
 import tensorflow as tf
 from sklearn.metrics import roc_auc_score
 from sklearn.utils import shuffle
+from utils import *
 
 # 设置随机种子
 SEED = 2019
 np.random.seed(SEED)
 set_random_seed(SEED)
 
-
-def train_w2v(text_list=None, output_vector='data/w2v.txt'):
-    """
-    训练word2vec
-    :param text_list:文本列表
-    :param output_vector:词向量输出路径
-    :return:
-    """
-    print("正在训练词向量。。。")
-    corpus = [text.split() for text in text_list]
-    model = Word2Vec(corpus, size=100, window=5,
-                     iter=20, min_count=1,
-                     workers=multiprocessing.cpu_count()
-                     )
-    # 保存词向量
-    model.wv.save_word2vec_format(output_vector, binary=False)
-
-
-def to_text(row, columns):
-    text = []
-    for col in columns:
-        text.append(col + '_' + str(row[col]))
-    return " ".join(text)
-
-
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
-train = shuffle(train)
+train = shuffle(train)  # 打乱数据集
 test = pd.read_csv("new_data/test.csv")
-
-# 全量数据
 train['id'] = [i for i in range(len(train))]
 test['target'] = [-1 for i in range(len(test))]
-df = pd.concat([train, test], sort=False)
-
-# 训练词向量
-df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
+# 特征列
 no_fea = ['id', 'target', 'certValidStop', 'certValidBegin']
-feas = [fea for fea in df.columns if fea not in no_fea]
-print("正在将生成文本..")
-df['token_text'] = df.apply(lambda row: to_text(row, feas), axis=1)
-texts = df['token_text'].values.tolist()
-# train_w2v(texts)
+feas = [fea for fea in train.columns if fea not in no_fea]
+
+# 参数
+is_Train_w2v = False  # 是否重新训练词向量
+EMBEDDING_DIM = 100  # 词向量维度
+MAX_SEQUENCE_LENGTH = 101  # 序列最大长度 len(feas)
+W2V_FILE = 'data/w2v.txt'
+
+if is_Train_w2v:
+    df = pd.concat([train, test], sort=False)
+    df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
+    print("正在将生成文本..")
+    df['token_text'] = df.apply(lambda row: to_text(row, feas), axis=1)
+    texts = df['token_text'].values.tolist()
+    train_w2v(texts, W2V_FILE, EMBEDDING_DIM)
+else:
+    print("加载已生成的向量...")
+    df = pd.read_csv('tmp/df.csv')
+    texts = df['token_text'].values.tolist()
 
 # 构建词汇表
 tokenizer = Tokenizer(filters='|')
@@ -75,10 +60,8 @@ word_index = tokenizer.word_index
 print(word_index)
 print("词语数量个数：{}".format(len(word_index)))
 
-# 数据
-EMBEDDING_DIM = 100
-MAX_SEQUENCE_LENGTH = len(feas)
-
+# MAX_SEQUENCE_LENGTH = len(feas)
+print("最大长度", MAX_SEQUENCE_LENGTH)
 sequences = tokenizer.texts_to_sequences(texts)
 data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
 
@@ -93,104 +76,35 @@ y_train = y_train.astype(np.int32)
 print(y_train)
 
 
-# 创建embedding_layer
-def create_embedding(word_index, w2v_file):
-    """
-    :param word_index: 词语索引字典
-    :param w2v_file: 词向量文件
-    :return:
-    """
-    embedding_index = {}
-    f = open(w2v_file, 'r', encoding='utf-8')
-    next(f)  # 下一行
-    for line in f:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embedding_index[word] = coefs
-    f.close()
-    print("Total %d word vectors in w2v_file" % len(embedding_index))
-
-    embedding_matrix = np.random.random(size=(len(word_index)+1, EMBEDDING_DIM))
-    for word, i in word_index.items():
-        embedding_vector = embedding_index.get(word)
-        if embedding_vector is not None:
-            embedding_matrix[i] = embedding_vector
-    embedding_layer = Embedding(len(word_index) + 1,
-                                EMBEDDING_DIM,
-                                input_length=MAX_SEQUENCE_LENGTH,
-                                trainable=False)
-    return embedding_layer
-
-
 def create_text_cnn():
     #
     sequence_input = Input(shape=(MAX_SEQUENCE_LENGTH,), dtype='int32')
-    embedding_layer = create_embedding(word_index, 'data/w2v.txt')
+    embedding_layer = create_embedding(word_index, W2V_FILE, EMBEDDING_DIM, MAX_SEQUENCE_LENGTH)
     embedding_sequences = embedding_layer(sequence_input)
-    conv1 = Conv1D(128, 5, activation='relu', padding='same')(embedding_sequences)
-    pool1 = MaxPool1D(3)(conv1)
-    conv2 = Conv1D(128, 5, activation='relu', padding='same')(pool1)
-    pool2 = MaxPool1D(3)(conv2)
-    conv3 = Conv1D(128, 5, activation='relu', padding='same')(pool2)
-    pool3 = MaxPool1D(3)(conv3)
-    # convs = []
-    # for kernel_size in range(1, 5):
-    #     conv = BatchNormalization()(embedding_sequences)
-    #     conv = Conv1D(128, kernel_size, activation='relu')(conv)
-    #     convs.append(conv)
-    # poolings = [GlobalMaxPooling1D()(conv) for conv in convs]
-    # x_concat = Concatenate()(poolings)
+    # conv1 = Conv1D(128, 5, activation='relu', padding='same')(embedding_sequences)
+    # pool1 = MaxPool1D(3)(conv1)
+    # conv2 = Conv1D(128, 5, activation='relu', padding='same')(pool1)
+    # pool2 = MaxPool1D(3)(conv2)
+    # conv3 = Conv1D(128, 5, activation='relu', padding='same')(pool2)
+    # pool3 = MaxPool1D(3)(conv3)
+    # flat = Flatten()(pool3)
+    # dense = Dense(128, activation='relu')(flat)
 
-    flat = Flatten()(pool3)
-    dense = Dense(128, activation='relu')(flat)
-    pred = Dense(1, activation='sigmoid')(dense)
-    model_ = Model(sequence_input, pred)
-    return model_
+    convs = []
+    for kernel_size in range(1, 5):
+        conv = BatchNormalization()(embedding_sequences)
+        conv = Conv1D(128, kernel_size, activation='relu')(conv)
+        convs.append(conv)
+    poolings = [GlobalMaxPooling1D()(conv) for conv in convs]
+    x_concat = Concatenate()(poolings)
+    dense = Dense(128, activation='relu')(x_concat)
+    preds = Dense(1, activation='sigmoid')(dense)
+    model = Model(sequence_input, preds)
+    return model
 
 
 train_pred = np.zeros((len(train), 1))
 test_pred = np.zeros((len(test), 1))
-
-
-class roc_auc_callback(Callback):
-    def __init__(self, training_data, validation_data):
-        self.x = training_data[0]
-        self.y = training_data[1]
-        self.x_val = validation_data[0]
-        self.y_val = validation_data[1]
-
-    def on_train_begin(self, logs={}):
-        return
-
-    def on_train_end(self, logs={}):
-        return
-
-    def on_epoch_begin(self, epoch, logs={}):
-        return
-
-    def on_epoch_end(self, epoch, logs={}):
-        y_pred = self.model.predict(self.x, verbose=0)
-        roc = roc_auc_score(self.y, y_pred)
-        logs['roc_auc'] = roc_auc_score(self.y, y_pred)
-        logs['norm_gini'] = (roc_auc_score(self.y, y_pred) * 2) - 1
-
-        y_pred_val = self.model.predict(self.x_val, verbose=0)
-        roc_val = roc_auc_score(self.y_val, y_pred_val)
-        logs['roc_auc_val'] = roc_auc_score(self.y_val, y_pred_val)
-        logs['norm_gini_val'] = (roc_auc_score(self.y_val, y_pred_val) * 2) - 1
-
-        print('\rroc_auc: %s - roc_auc_val: %s - norm_gini: %s - norm_gini_val: %s' % (
-            str(round(roc, 5)), str(round(roc_val, 5)), str(round((roc * 2 - 1), 5)), str(round((roc_val * 2 - 1), 5))),
-              end=10 * ' ' + '\n')
-        return
-
-    def on_batch_begin(self, batch, logs={}):
-        return
-
-    def on_batch_end(self, batch, logs={}):
-        return
-
 
 cv_scores = []
 skf = StratifiedKFold(n_splits=5, random_state=52, shuffle=True)
@@ -213,8 +127,9 @@ for i, (train_index, valid_index) in enumerate(skf.split(x_train, y_train)):
     history = model.fit(X_train, y_tr,
                         validation_data=(X_valid, y_val),
                         epochs=5, batch_size=32,
-                        callbacks=[checkpoint, roc_auc_callback(training_data=(X_train, y_tr),
-                                                                validation_data=(X_valid, y_val))])
+                        callbacks=[checkpoint,
+                                   roc_auc_callback(training_data=(X_train, y_tr),
+                                                    validation_data=(X_valid, y_val))])
 
     # model.load_weights('models/cnn_text.h5')
     yval_pred = model.predict(X_valid)
