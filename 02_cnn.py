@@ -27,31 +27,36 @@ set_random_seed(SEED)
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
-train = shuffle(train)  # 打乱数据集
+train = shuffle(train, random_state=SEED)  # 打乱数据集
 test = pd.read_csv("new_data/test.csv")
 train['id'] = [i for i in range(len(train))]
 test['target'] = [-1 for i in range(len(test))]
 # 特征列
+df = pd.concat([train, test], sort=False)
+df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
 no_fea = ['id', 'target', 'certValidStop', 'certValidBegin']
-feas = [fea for fea in train.columns if fea not in no_fea]
+feas = [fea for fea in df.columns if fea not in no_fea]
+print(len(feas))
 
 # 参数
 is_Train_w2v = False  # 是否重新训练词向量
 EMBEDDING_DIM = 100  # 词向量维度
-MAX_SEQUENCE_LENGTH = 101  # 序列最大长度 len(feas)
+MAX_SEQUENCE_LENGTH = len(feas)  # 序列最大长度 len(feas)
 W2V_FILE = 'data/w2v.txt'
 
 if is_Train_w2v:
-    df = pd.concat([train, test], sort=False)
-    df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
+
     print("正在将生成文本..")
     df['token_text'] = df.apply(lambda row: to_text(row, feas), axis=1)
+    df.to_csv('tmp/df.csv', index=None)
     texts = df['token_text'].values.tolist()
+    print(texts[0])
     train_w2v(texts, W2V_FILE, EMBEDDING_DIM)
 else:
     print("加载已生成的向量...")
     df = pd.read_csv('tmp/df.csv')
     texts = df['token_text'].values.tolist()
+    print(texts[0])
 
 # 构建词汇表
 tokenizer = Tokenizer(filters='|')
@@ -141,7 +146,7 @@ print("5折平均分数为：{}".format(score))
 
 # 提交结果
 test['target'] = test_pred / 5
-test[['id', 'target']].to_csv('result/w300{}_cnn.csv'.format(score), index=None)
+test[['id', 'target']].to_csv('result/02_{}_cnn.csv'.format(score), index=None)
 
 # 训练数据预测结果
 train['pred'] = train_pred
