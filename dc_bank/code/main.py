@@ -251,7 +251,7 @@ def xgbt2_proba(X_train, y_train, X_test, y_test):
     model.fit(X_train, y_train)
     return model
 
-def xgbt3_proba(X_train, y_train, X_test, y_test):
+def xgbt3(X_train, y_train, X_test, y_test):
     model = xgb.XGBRegressor(n_estimators=100, max_depth=3, max_features='sqrt', random_state=456, n_jobs=8)
     model.fit(X_train, y_train)
     return model
@@ -354,8 +354,9 @@ pred_test = []
 # for index, my_model in enumerate([lgb_para_binary_model, liner_re, ridge_re, bayes_re, xgb_model_re, lgb_model_re,
 #                                   xgb_para_binary_model, rf_model, gbdt_model]):
 # for index, my_model in enumerate([lgb_para_binary_model, xgb_model_re, lgb_model_re, xgb_para_binary_model, rf_model, gbdt_model]):
+
 for index, my_model in enumerate([lgb_para_binary_model, xgb_model_re, lgb_model_re, xgb_para_binary_model, xgbt1_proba,
-                                  xgbt2_proba, xgbt3_proba, gbdt1, gbdt2, gbdt3, forest1, forest2, forest3, lgb1_proba,
+                                  xgbt2_proba, xgbt3, gbdt1, gbdt2, gbdt3, forest1, forest2, forest3, lgb1_proba,
                                   lgb2_proba, lgb3_proba]):
 # for index, my_model in enumerate([liner_re, ridge_re, bayes_re]):
     r, oof = get_result(train_df, test_df, label, my_model, splits_nums=5, random_state=index)
@@ -382,4 +383,4 @@ test['target'] = test['target'].apply(lambda x: 0 if x < 0 else 1 if x > 1 else 
 
 test[['id', 'target']].to_csv('../result/submission_stack_boost.csv', index=None)
 
-# r, oof = get_result(train_df, test_df, label, lgb1_proba, splits_nums=5)
+# r, oof = get_result(train_df, test_df, label, xgbt3, splits_nums=5)
