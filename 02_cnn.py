@@ -34,12 +34,21 @@ test['target'] = [-1 for i in range(len(test))]
 # 特征列
 df = pd.concat([train, test], sort=False)
 df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
-no_fea = ['id', 'target', 'certValidStop', 'certValidBegin']
-feas = [fea for fea in df.columns if fea not in no_fea]
+# no_fea = ['id', 'target', 'certValidStop', 'certValidBegin']
+dup_feature = ['x_2', 'x_3', 'x_4', 'x_5', 'x_6',
+               'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13', 'x_15', 'x_17',
+               'x_18', 'x_19', 'x_21', 'x_23', 'x_24',
+               'x_36', 'x_37', 'x_38', 'x_40', 'x_57', 'x_58', 'x_59', 'x_60',
+               'x_70', 'x_77', 'x_78']
+# + \
+# ['x_61', 'x_22', 'x_40', 'x_41', 'x_45', 'x_43']
+no_feas = ['id', 'target'] + ['certId', 'bankCard', 'dist', 'residentAddr', 'certValidStop',
+                              'certValidBegin'] + dup_feature
+feas = [fea for fea in df.columns if fea not in no_feas]
 print(len(feas))
 
 # 参数
-is_Train_w2v = False  # 是否重新训练词向量
+is_Train_w2v = True  # 是否重新训练词向量
 EMBEDDING_DIM = 100  # 词向量维度
 MAX_SEQUENCE_LENGTH = len(feas)  # 序列最大长度 len(feas)
 W2V_FILE = 'data/w2v.txt'
