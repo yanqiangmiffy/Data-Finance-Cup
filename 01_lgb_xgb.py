@@ -53,8 +53,13 @@ stats_df.sort_values('Unique_values', ascending=False)[:30]
 
 # 特征工程
 # 根据 unique values确定
-
-no_feas = ['id', 'target'] + ['certId', 'bankCard', 'dist', 'residentAddr','certValidStop', 'certValidBegin']
+dup_feature = ['x_2', 'x_3', 'x_4', 'x_5', 'x_6',
+               'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13', 'x_15', 'x_17',
+               'x_18', 'x_19', 'x_21', 'x_23', 'x_24',
+               'x_36', 'x_37', 'x_38', 'x_40', 'x_57', 'x_58', 'x_59', 'x_60',
+               'x_70', 'x_77', 'x_78'] + ['x_61', 'x_22', 'x_40', 'x_41', 'x_45', 'x_43']
+no_feas = ['id', 'target'] + ['certId', 'bankCard', 'dist', 'residentAddr', 'certValidStop',
+                              'certValidBegin'] + dup_feature
 data['certPeriod'] = data['certValidStop'] - data['certValidBegin']
 numerical_features = ['certValidStop', 'certValidBegin', 'lmt', 'age', 'certPeriod']
 # data['certBalidStop_certValidBegin_ratio']=data ['certBalidStop']/data['certValidBegin']
