@@ -32,11 +32,11 @@ duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                       ['x_61']
 df = df.drop(columns=duplicated_features)
 print(df.shape)
-
-no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist']
+no_features = ['id', 'target']
 features = []
 numerical_features = ['lmt', 'certValidBegin', 'certValidStop']
-categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
+large_num_cates = ['bankCard', 'residentAddr', 'certId', 'dist']  # 类别种类很多
+categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features + large_num_cates]
 
 # =============== 数值特征处理 ===========
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
@@ -44,24 +44,24 @@ for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
 
 # =============== 类别特征处理 =============
-# 特殊处理
+# 对类别种类很多的类别特殊处理
 # bankCard 5991
 # residentAddr 5288
 # certId 4033
 # dist 3738
-cols = ['bankCard', 'residentAddr', 'certId', 'dist']
 # 计数
-for col in categorical_features+cols:
+for col in large_num_cates:
     col_nums = dict(df[col].value_counts())
     df[col + '_nums'] = df[col].apply(lambda x: col_nums[x])
 # 对lmt进行mean encoding
-for fea in tqdm(cols):
-    grouped_df = df.groupby(fea).agg({'lmt': ['min', 'max', 'mean', 'sum', 'median']})
-    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
-    grouped_df = grouped_df.reset_index()
-    # print(grouped_df)
-    df = pd.merge(df, grouped_df, on=fea, how='left')
-df = df.drop(columns=cols)  # 删除四列
+for fea in tqdm(large_num_cates):
+    for num_col in numerical_features:
+        grouped_df = df.groupby(fea).agg({num_col: ['min', 'max', 'mean', 'sum', 'median']})
+        grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+        grouped_df = grouped_df.reset_index()
+        # print(grouped_df)
+        df = pd.merge(df, grouped_df, on=fea, how='left')
+df = df.drop(columns=large_num_cates)  # 删除四列
 
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)

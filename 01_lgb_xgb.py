@@ -61,7 +61,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
     gbm = lgb.train(params,
                     lgb_train,
                     num_boost_round=2000,
-                    valid_sets=lgb_eval,
+                    valid_sets=(lgb_train,lgb_eval),
                     early_stopping_rounds=100,
                     verbose_eval=100)
 
