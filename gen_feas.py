@@ -17,7 +17,7 @@ stats_df = pd.DataFrame(stats, columns=['Feature', 'Unique_values', 'Percentage 
 stats_df.sort_values('Unique_values', ascending=False, inplace=True)
 stats_df.to_excel('tmp/stats_df.xlsx', index=None)
 
-# 特征工程
+# ============ 特征工程 begin===============
 df.fillna(value=-999, inplace=True)  # bankCard存在空值
 # 删除重复列
 duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
@@ -38,12 +38,12 @@ features = []
 numerical_features = ['lmt', 'certValidBegin', 'certValidStop']
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
 
-# 数值特征处理
+# =============== 数值特征处理 ===========
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
-# 类别特征处理
 
+# =============== 类别特征处理 =============
 # 特殊处理
 # bankCard 5991
 # residentAddr 5288
@@ -51,7 +51,7 @@ for feat in numerical_features + ['certValidPeriod']:
 # dist 3738
 cols = ['bankCard', 'residentAddr', 'certId', 'dist']
 # 计数
-for col in cols:
+for col in categorical_features+cols:
     col_nums = dict(df[col].value_counts())
     df[col + '_nums'] = df[col].apply(lambda x: col_nums[x])
 # 对lmt进行mean encoding
@@ -66,7 +66,9 @@ df = df.drop(columns=cols)  # 删除四列
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)
 df.to_csv('tmp/df.csv', index=None)
-print("df.shape:",df.shape)
+print("df.shape:", df.shape)
+
+# ============ 特征工程 end===============
 
 features = [fea for fea in df.columns if fea not in no_features]
 train, test = df[:len(train)], df[len(train):]
