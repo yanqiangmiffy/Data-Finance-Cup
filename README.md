@@ -35,6 +35,8 @@ dist
 - xgb原始特征cv_gbdt： 0.7157745924652787
 - lr基于xgb的特征cv_lr_trans： 0.6550243546006284
 - lr基于xgb特征个原始特征cv_lr_trans_raw： 0.5163804384024511
+- lgb xgb gen_feas 0.78
+- 10.entity_embedding 0.70
 ## 相关资料
 
 1. https://github.com/TingNie/CreditForecast/blob/master/code.ipynb
