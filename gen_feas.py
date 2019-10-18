@@ -1,6 +1,58 @@
 import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+
+
+def add_noise(series, noise_level):
+    return series * (1 + noise_level * np.random.randn(len(series)))
+
+
+def target_encode(trn_series=None,
+                  tst_series=None,
+                  target=None,
+                  min_samples_leaf=1,
+                  smoothing=1,
+                  noise_level=0):
+    """
+    Smoothing is computed like in the following paper by Daniele Micci-Barreca
+    https://kaggle2.blob.core.windows.net/forum-message-attachments/225952/7441/high%20cardinality%20categoricals.pdf
+    trn_series : training categorical feature as a pd.Series
+    tst_series : test categorical feature as a pd.Series
+    target : target data as a pd.Series
+    min_samples_leaf (int) : minimum samples to take category average into account
+    smoothing (int) : smoothing effect to balance categorical average vs prior
+    """
+    assert len(trn_series) == len(target)
+    assert trn_series.name == tst_series.name
+    temp = pd.concat([trn_series, target], axis=1)
+    # Compute target mean
+    averages = temp.groupby(by=trn_series.name)[target.name].agg(["mean", "count"])
+    # Compute smoothing
+    smoothing = 1 / (1 + np.exp(-(averages["count"] - min_samples_leaf) / smoothing))
+    # Apply average function to all target data
+    prior = target.mean()
+    # The bigger the count the less full_avg is taken into account
+    averages[target.name] = prior * (1 - smoothing) + averages["mean"] * smoothing
+    averages.drop(["mean", "count"], axis=1, inplace=True)
+    # Apply averages to trn and tst series
+    ft_trn_series = pd.merge(
+        trn_series.to_frame(trn_series.name),
+        averages.reset_index().rename(columns={'index': target.name, target.name: 'average'}),
+        on=trn_series.name,
+        how='left')['average'].rename(trn_series.name + '_mean').fillna(prior)
+    # pd.merge does not keep the index so restore it
+    ft_trn_series.index = trn_series.index
+    ft_tst_series = pd.merge(
+        tst_series.to_frame(tst_series.name),
+        averages.reset_index().rename(columns={'index': target.name, target.name: 'average'}),
+        on=tst_series.name,
+        how='left')['average'].rename(trn_series.name + '_mean').fillna(prior)
+    # pd.merge does not keep the index so restore it
+    ft_tst_series.index = tst_series.index
+    return add_noise(ft_trn_series, noise_level), add_noise(ft_tst_series, noise_level)
+
 
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
@@ -63,13 +115,48 @@ for fea in tqdm(cols):
     df = pd.merge(df, grouped_df, on=fea, how='left')
 df = df.drop(columns=cols)  # 删除四列
 
+import time
+
+combs = [
+    ('ethnic', 'highestEdu'),
+    ('basicLevel', 'linkRela'),
+]
+start = time.time()
+from itertools import combinations
+
+# for n_c, (f1, f2) in enumerate(combs):
+for n_c, (f1, f2) in tqdm(enumerate(combinations(categorical_features, 2))):
+    print(f1,f2)
+    # f1 = rv[0]
+    # f2 = rv[1]
+    name1 = f1 + "_plus_" + f2
+    print('current feature %60s %4d in %5.1f'
+          % (name1, n_c + 1, (time.time() - start) / 60), end='')
+    print('\r' * 75, end='')
+    df[name1] = df[f1].apply(lambda x: str(x)) + "_" + df[f2].apply(lambda x: str(x))
+    # Label Encode
+    lbl = LabelEncoder()
+    lbl.fit(list(df[name1].values))
+    df[name1] = lbl.transform(list(df[name1].values))
+
+    categorical_features.append(name1)
+
 # dummies
-df = pd.get_dummies(df, columns=categorical_features)
-df.to_csv('tmp/df.csv', index=None)
-print("df.shape:",df.shape)
+# df = pd.get_dummies(df, columns=categorical_features)
+# df.to_csv('tmp/df.csv', index=None)
+print("df.shape:", df.shape)
+
+for f in categorical_features:
+    df[f + "_avg"], df[f + "_avg"] = target_encode(trn_series=df[f],
+                                                   tst_series=df[f],
+                                                   target=df['target'],
+                                                   min_samples_leaf=200,
+                                                   smoothing=10,
+                                                   noise_level=0)
+# df = pd.get_dummies(df, columns=categorical_features)
+train, test = df[:len(train)], df[len(train):]
 
 features = [fea for fea in df.columns if fea not in no_features]
-train, test = df[:len(train)], df[len(train):]
 
 
 def load_data():
