@@ -46,7 +46,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
         'metric': {'auc'},
         'max_depth': 4,
         'min_child_weight': 6,
-        'num_leaves': 16,
+        'num_leaves': 128,
         'learning_rate': 0.02,  # 0.05
         'feature_fraction': 0.7,
         'bagging_fraction': 0.7,
