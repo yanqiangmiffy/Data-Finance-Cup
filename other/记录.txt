@@ -1,0 +1,17 @@
+# 特殊处理
+# bankCard 5991
+# residentAddr 5288
+# certId 4033
+# dist 3738
+# lmt 1718
+# ethnic 49
+# age 38
+# setupHour 24
+# job 13
+# linkRela 9
+# highestEdu 9
+# edu 9
+# x_33 7
+# weekday 7
+# x_34 7
+# basicLevel 6
