@@ -46,7 +46,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
         'metric': {'auc'},
         'max_depth': 4,
         'min_child_weight': 6,
-        'num_leaves': 128,
+        'num_leaves': 16,
         'learning_rate': 0.02,  # 0.05
         'feature_fraction': 0.7,
         'bagging_fraction': 0.7,
@@ -63,7 +63,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
                     num_boost_round=2000,
                     valid_sets=(lgb_train,lgb_eval),
                     early_stopping_rounds=100,
-                    verbose_eval=100)
+                    verbose_eval=100,feature_name=features)
 
     print('................Start predict .........................')
     # 预测
@@ -75,6 +75,20 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
     # test
     pred = gbm.predict(test_data, num_iteration=gbm.best_iteration)
     pred_cv.append(pred)
+
+
+lgb.plot_importance(gbm, max_num_features=20)
+plt.show()
+
+### 特征选择
+df = pd.DataFrame(train[features].columns.tolist(), columns=['feature'])
+df['importance'] = list(gbm.feature_importance())  # 特征分数
+df = df.sort_values(by='importance', ascending=False)
+print(list(df['feature'].values)[:50])
+# 特征排序
+df.to_excel("tmp/feature_score.xlsx", index=None)  # 保存分数
+
+
 # K交叉验证的平均分数
 print('the cv information:')
 print(auc_cv)

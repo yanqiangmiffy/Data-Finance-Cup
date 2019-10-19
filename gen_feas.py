@@ -121,12 +121,22 @@ combs = [
     ('ethnic', 'highestEdu'),
     ('basicLevel', 'linkRela'),
 ]
+
+col_vals_dict = {c: list(train[c].unique()) for c in categorical_features}
+print(col_vals_dict)
+embed_cols = []
+for c in col_vals_dict:
+    if 6<=len(col_vals_dict[c]) <=50:
+        embed_cols.append(c)
+        print(c + ': %d values' % len(col_vals_dict[c]))  # look at value counts to know the embedding dimensions
+print('\n')
+print(len(embed_cols))
 start = time.time()
 from itertools import combinations
 
 # for n_c, (f1, f2) in enumerate(combs):
-for n_c, (f1, f2) in tqdm(enumerate(combinations(categorical_features, 2))):
-    print(f1,f2)
+for n_c, (f1, f2) in tqdm(enumerate(combinations(embed_cols, 2))):
+    print(f1, f2)
     # f1 = rv[0]
     # f2 = rv[1]
     name1 = f1 + "_plus_" + f2

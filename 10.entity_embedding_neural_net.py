@@ -110,7 +110,7 @@ col_vals_dict = {c: list(X_train[c].unique()) for c in categorical_features}
 print(col_vals_dict)
 embed_cols = []
 for c in col_vals_dict:
-    if len(col_vals_dict[c]) > 1:
+    if len(col_vals_dict[c]) > 2:
         embed_cols.append(c)
         print(c + ': %d values' % len(col_vals_dict[c]))  # look at value counts to know the embedding dimensions
 print('\n')
