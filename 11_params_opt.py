@@ -53,9 +53,14 @@ from skopt.callbacks import DeadlineStopper  # Stop the optimization before runn
 from skopt.callbacks import VerboseCallback  # Callback to control the verbosity
 # Stop the optimization If the last two positions at which the objective has been evaluated are less than delta
 from skopt.callbacks import DeltaXStopper
+from gen_feas import load_data
 
 # Uploading the Boston dataset
-X, y = load_boston(return_X_y=True)
+# X, y = load_boston(return_X_y=True)
+
+train, test, no_features, features = load_data()
+X = train[features].values
+y = train['target'].astype('int32')
 # Transforming the problem into a classification (unbalanced)
 y_bin = (y > np.percentile(y, 90)).astype(int)
 clf = lgb.LGBMClassifier(boosting_type='gbdt',

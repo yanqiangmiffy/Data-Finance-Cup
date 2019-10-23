@@ -6,6 +6,10 @@ train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
+
+train['missing'] = (train==-1).sum(axis=1).astype(float)
+test['missing'] = (test==-1).sum(axis=1).astype(float)
+
 df = pd.concat([train, test], sort=False, axis=0)
 stats = []
 for col in df.columns:
@@ -33,10 +37,23 @@ duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
 df = df.drop(columns=duplicated_features)
 print(df.shape)
 
-no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist']
+no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist','new_ind']
 features = []
-numerical_features = ['lmt', 'certValidBegin', 'certValidStop']
+numerical_features = ['lmt', 'certValidBegin', 'certValidStop','missing']
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
+
+
+ind_features = [c for c in categorical_features if 'x_' in c]
+count=0
+for c in ind_features:
+    if count==0:
+        df['new_ind'] = df[c].astype(str)+'_'
+        count+=1
+    else:
+        df['new_ind'] += df[c].astype(str)+'_'
+for c in ['new_ind']:
+    d = df[c].value_counts().to_dict()
+    df['%s_count'%c] = df[c].apply(lambda x:d.get(x,0))
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
