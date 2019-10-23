@@ -18,7 +18,7 @@ print(X.shape)
 
 # 训练
 # 采取分层采样
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold,RepeatedKFold
 from sklearn.metrics import roc_auc_score
 
 print("start：********************************")
