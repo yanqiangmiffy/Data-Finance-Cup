@@ -7,8 +7,8 @@ train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
 
-train['missing'] = (train==-1).sum(axis=1).astype(float)
-test['missing'] = (test==-1).sum(axis=1).astype(float)
+train['missing'] = (train==-999).sum(axis=1).astype(float)
+test['missing'] = (test==-999).sum(axis=1).astype(float)
 
 df = pd.concat([train, test], sort=False, axis=0)
 stats = []
@@ -64,8 +64,8 @@ for c in ind_features:
     else:
         df['new_ind2'] += df[c].astype(str)+'_'
 for c in ['new_ind2']:
-    d = df[c].value_counts().to_dict()
-    df['%s_count'%c] = df[c].apply(lambda x:d.get(x,0))
+    d1 = df[c].value_counts().to_dict()
+    df['%s_count'%c] = df[c].apply(lambda x:d1.get(x,0))
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 for feat in numerical_features + ['certValidPeriod']:
