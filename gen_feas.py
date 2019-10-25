@@ -7,8 +7,9 @@ train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
 
-train['missing'] = (train == -999).sum(axis=1).astype(float)
-test['missing'] = (test == -999).sum(axis=1).astype(float)
+train.fillna(value=-999, inplace=True)  # bankCard存在空值
+test.fillna(value=-999, inplace=True)  # bankCard存在空值
+
 
 df = pd.concat([train, test], sort=False, axis=0)
 stats = []
@@ -22,7 +23,11 @@ stats_df.sort_values('Unique_values', ascending=False, inplace=True)
 stats_df.to_excel('tmp/stats_df.xlsx', index=None)
 
 # 特征工程
-df.fillna(value=0, inplace=True)  # bankCard存在空值
+
+# 缺失值个数统计
+train['missing'] = (train == -999).sum(axis=1).astype(float)
+test['missing'] = (test == -999).sum(axis=1).astype(float)
+
 # 删除重复列
 duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                        'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
@@ -49,7 +54,8 @@ for c in ['new_ind0']:
 df = df.drop(columns=duplicated_features)
 print(df.shape)
 
-no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist', 'new_ind0', 'new_ind1', 'new_ind2','new_ind3']
+no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist', 'new_ind0', 'new_ind1', 'new_ind2',
+                                  'new_ind3']
 features = []
 numerical_features = ['lmt', 'certValidBegin', 'certValidStop', 'missing']
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
