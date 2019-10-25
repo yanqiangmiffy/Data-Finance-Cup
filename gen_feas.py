@@ -42,6 +42,7 @@ features = []
 numerical_features = ['lmt', 'certValidBegin', 'certValidStop', 'missing']
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
 
+
 group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
 group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
 group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
@@ -83,11 +84,25 @@ for index, ind_features in enumerate(group_features):
         d = df[c].value_counts().to_dict()
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
     df.drop(columns=['new_ind' + str(index)], inplace=True)
+# 时间特征
+import time
+df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
 
+df['begin_year'] = df['begin'].apply(lambda x: int(x[0:4]))
+df['now_begin_period']=df['begin_year']-2019-70
+
+df['stop'] = df['certValidStop'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
+df['stop_year'] = df['stop'].apply(lambda x: int(x[0:4]))
+df['now_stop_period']=df['stop_year']-2019-70
+# df['begin_month'] = df['begin'].apply(lambda x: int(x[5:7]))
+# df['begin_day'] = df['begin'].apply(lambda x: int(x[8:10]))
+df.drop(columns='begin',inplace=True)
+df.drop(columns='stop',inplace=True)
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
+df['lmt_period']=df['lmt']/df['certValidPeriod']
 # 类别特征处理
 
 # 特殊处理
@@ -111,7 +126,7 @@ df = df.drop(columns=cols)  # 删除四列
 
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)
-df.to_csv('tmp/df.csv', index=None)
+df.head().to_csv('tmp/df.csv', index=None)
 print("df.shape:", df.shape)
 
 features = [fea for fea in df.columns if fea not in no_features]
