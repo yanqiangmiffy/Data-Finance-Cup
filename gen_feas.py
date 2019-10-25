@@ -7,9 +7,6 @@ train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
 
-
-
-
 df = pd.concat([train, test], sort=False, axis=0)
 stats = []
 for col in df.columns:
