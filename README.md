@@ -15,8 +15,7 @@ dist
 - ['x_41', 'unpayNormalLoan']
 - ['x_43', 'unpayIndvLoan']
 - ['x_45', 'unpayOtherLoan']
-- 
-['x_61', 'ncloseCreditCard']
+- ['x_61', 'ncloseCreditCard']
 ## 结果
 - lgb 0.733
 - xgb 0.72

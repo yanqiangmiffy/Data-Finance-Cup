@@ -1,9 +1,9 @@
 import pandas as pd
 
-train = pd.read_csv("new_data/train.csv")
-train_target = pd.read_csv('new_data/train_target.csv')
+train = pd.read_csv("../new_data/train.csv")
+train_target = pd.read_csv('../new_data/train_target.csv')
 train = train.merge(train_target, on='id')
-test = pd.read_csv("new_data/test.csv")
+test = pd.read_csv("../new_data/test.csv")
 df = pd.concat([train, test], sort=False, axis=0)
 print(df.shape)
 stats = []
@@ -14,7 +14,7 @@ for col in df.columns:
 stats_df = pd.DataFrame(stats, columns=['Feature', 'Unique_values', 'Percentage of missing values',
                                         'Percentage of values in the biggest category', 'type'])
 stats_df.sort_values('Unique_values', ascending=False, inplace=True)
-stats_df.to_excel('tmp/stats_df.xlsx', index=None)
+stats_df.to_excel('../tmp/stats_df.xlsx', index=None)
 
 df.fillna(value=-999, inplace=True)  # bankCard存在空值
 
