@@ -7,8 +7,8 @@ train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
 
-train['missing'] = (train==-999).sum(axis=1).astype(float)
-test['missing'] = (test==-999).sum(axis=1).astype(float)
+train['missing'] = (train == -999).sum(axis=1).astype(float)
+test['missing'] = (test == -999).sum(axis=1).astype(float)
 
 df = pd.concat([train, test], sort=False, axis=0)
 stats = []
@@ -34,38 +34,62 @@ duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                       ['x_43'] + \
                       ['x_45'] + \
                       ['x_61']
+ind_features = duplicated_features
+count = 0
+for c in ind_features:
+    if count == 0:
+        df['new_ind0'] = df[c].astype(str) + '_'
+        count += 1
+    else:
+        df['new_ind0'] += df[c].astype(str) + '_'
+for c in ['new_ind0']:
+    d0 = df[c].value_counts().to_dict()
+    df['%s_count' % c] = df[c].apply(lambda x: d0.get(x, 0))
+
 df = df.drop(columns=duplicated_features)
 print(df.shape)
 
-no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist','new_ind1','new_ind2']
+no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist', 'new_ind0', 'new_ind1', 'new_ind2','new_ind3']
 features = []
-numerical_features = ['lmt', 'certValidBegin', 'certValidStop','missing']
+numerical_features = ['lmt', 'certValidBegin', 'certValidStop', 'missing']
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
 
-
 ind_features = [c for c in categorical_features if 'x_' in c]
-count=0
+count = 0
 for c in ind_features:
-    if count==0:
-        df['new_ind1'] = df[c].astype(str)+'_'
-        count+=1
+    if count == 0:
+        df['new_ind1'] = df[c].astype(str) + '_'
+        count += 1
     else:
-        df['new_ind1'] += df[c].astype(str)+'_'
+        df['new_ind1'] += df[c].astype(str) + '_'
 for c in ['new_ind1']:
     d = df[c].value_counts().to_dict()
-    df['%s_count'%c] = df[c].apply(lambda x:d.get(x,0))
+    df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
 
 ind_features = ['bankCard', 'residentAddr', 'certId', 'dist']
-count=0
+count = 0
 for c in ind_features:
-    if count==0:
-        df['new_ind2'] = df[c].astype(str)+'_'
-        count+=1
+    if count == 0:
+        df['new_ind2'] = df[c].astype(str) + '_'
+        count += 1
     else:
-        df['new_ind2'] += df[c].astype(str)+'_'
+        df['new_ind2'] += df[c].astype(str) + '_'
 for c in ['new_ind2']:
     d1 = df[c].value_counts().to_dict()
-    df['%s_count'%c] = df[c].apply(lambda x:d1.get(x,0))
+    df['%s_count' % c] = df[c].apply(lambda x: d1.get(x, 0))
+
+ind_features = ['unpayOtherLoan', 'job', 'setupHour', 'linkRela', 'basicLevel', 'ethnic']
+
+count = 0
+for c in ind_features:
+    if count == 0:
+        df['new_ind3'] = df[c].astype(str) + '_'
+        count += 1
+    else:
+        df['new_ind3'] += df[c].astype(str) + '_'
+for c in ['new_ind3']:
+    d3 = df[c].value_counts().to_dict()
+    df['%s_count' % c] = df[c].apply(lambda x: d3.get(x, 0))
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 for feat in numerical_features + ['certValidPeriod']:
@@ -84,7 +108,7 @@ for col in cols:
     df[col + '_nums'] = df[col].apply(lambda x: col_nums[x])
 # 对lmt进行mean encoding
 for fea in tqdm(cols):
-    grouped_df = df.groupby(fea).agg({'lmt': ['min', 'max', 'mean', 'sum', 'median']})
+    grouped_df = df.groupby(fea).agg({'lmt': ['min', 'max', 'mean', 'sum', 'median', 'size']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
     # print(grouped_df)
