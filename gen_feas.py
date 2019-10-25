@@ -7,8 +7,7 @@ train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
 
-train.fillna(value=-999, inplace=True)  # bankCard存在空值
-test.fillna(value=-999, inplace=True)  # bankCard存在空值
+
 
 
 df = pd.concat([train, test], sort=False, axis=0)
@@ -25,6 +24,8 @@ stats_df.to_excel('tmp/stats_df.xlsx', index=None)
 # 特征工程
 
 # 缺失值个数统计
+train.fillna(value=-999, inplace=True)  # bankCard存在空值
+test.fillna(value=-999, inplace=True)  # bankCard存在空值
 train['missing'] = (train == -999).sum(axis=1).astype(float)
 test['missing'] = (test == -999).sum(axis=1).astype(float)
 
