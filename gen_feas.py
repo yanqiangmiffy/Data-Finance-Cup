@@ -101,11 +101,14 @@ df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 # 3776198400  3326313600
 df['begin_span'] = df['certValidBegin'].apply(lambda x: 1 if 3326313600 <= x <= 3776198400 else 0)
 df['certValid_bin']=pd.cut(df['certValidBegin'],5,labels=[1,2,3,4,5])
-print(df['certValid_bin'])
+# print(df['certValid_bin'])
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
 # df['lmt_period']=df['lmt']/df['certValidPeriod']
+
 # 类别特征处理
+df['is_edu_equal'] = (df['edu'] == df['highestEdu']).astype(int)
+df['is_dist_certId_equal'] = (df['dist'] == df['certId']).astype(int)
 
 # 特殊处理
 # bankCard 5991
