@@ -2,7 +2,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 import time
-
+from sklearn.preprocessing import LabelEncoder
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
@@ -55,10 +55,10 @@ df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 # 3778531200  3293136000
 # 3776198400  3326313600
 df['begin_span'] = df['certValidBegin'].apply(lambda x: 1 if 3326313600 <= x <= 3776198400 else 0)
-df['certValidBegin_bin'] = pd.cut(df['certValidBegin'], 5, labels=[1, 2, 3, 4, 5])
+df['certValidBegin_bin'] = pd.cut(df['certValidBegin'], 20, labels=[i for i in range(20)])
 
 # certValidStop
-df['certValidStop_bin'] = pd.cut(df['certValidStop'], 5, labels=[1, 2, 3, 4, 5])
+df['certValidStop_bin'] = pd.cut(df['certValidStop'], 20, labels=[i for i in range(20)])
 
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
@@ -74,9 +74,9 @@ df['999_count'] = (df == -999).sum(axis=1).astype(float)
 # df['1_count'] = (df == 1).sum(axis=1).astype(float)
 group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
 group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
-group_features3 = ['lmt_bin', 'certValidBegin_bin']  # 征信1
+group_features3 = ['lmt_bin', 'certValidBegin_bin','certValidStop_bin']  # 征信1
 
-group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
+group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela', 'highestEdu']  # 基本属性
 group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
 # 重要特征+其他组合
 # group_features5 = group_features1 + ['lmt']
@@ -111,7 +111,11 @@ for index, ind_features in enumerate(group_features):
     for c in ['new_ind' + str(index)]:
         d = df[c].value_counts().to_dict()
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
-    df.drop(columns=['new_ind' + str(index)], inplace=True)
+
+    le = LabelEncoder()
+    le.fit(df['new_ind' + str(index)])
+    df['new_ind' + str(index)] = le.transform(df['new_ind' + str(index)])
+    # df.drop(columns=['new_ind' + str(index)], inplace=True)
 
 # 特殊处理
 # bankCard 5991
@@ -120,13 +124,12 @@ for index, ind_features in enumerate(group_features):
 # dist 3738
 cols = ['bankCard', 'residentAddr', 'certId', 'dist',
         'certValidPeriod', 'age', 'job', 'ethnic', 'basicLevel',
-        'linkRela','highestEdu']
+        'linkRela', 'highestEdu']
 for col in cols:
     df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
 
-
 # 对lmt进行mean encoding
-for fea in tqdm(cols):
+for fea in tqdm(['bankCard', 'residentAddr', 'certId', 'dist']):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
