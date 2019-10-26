@@ -42,14 +42,39 @@ features = []
 numerical_features = ['lmt', 'certValidBegin', 'certValidStop']
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
 
+# ========  lmt ==========
+df['lmt_bin'] = pd.cut(df['lmt'], 3, labels=[1, 2, 3])
+
+# ========  certValidBegin ============
+df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
+df['begin_year'] = df['begin'].apply(lambda x: int(x[0:4]))
+df['begin_age_diff'] = df['begin_year'] - df['age']
+df['begin_age_ration'] = df['begin_year'] / df['age']
+df.drop(columns='begin', inplace=True)
+df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+# 3778531200  3293136000
+# 3776198400  3326313600
+df['begin_span'] = df['certValidBegin'].apply(lambda x: 1 if 3326313600 <= x <= 3776198400 else 0)
+df['certValidBegin_bin'] = pd.cut(df['certValidBegin'], 5, labels=[1, 2, 3, 4, 5])
+
+# certValidStop
+df['certValidStop_bin'] = pd.cut(df['certValidStop'], 5, labels=[1, 2, 3, 4, 5])
+
+for feat in numerical_features + ['certValidPeriod']:
+    df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
+# df['lmt_period']=df['lmt']/df['certValidPeriod']
+
+# 类别特征处理
+df['is_edu_equal'] = (df['edu'] == df['highestEdu']).astype(int)
+df['is_dist_certId_equal'] = (df['dist'] == df['certId']).astype(int)
+
 # 特殊值count特征
 df['999_count'] = (df == -999).sum(axis=1).astype(float)
 # df['0_count'] = (df[[c for c in categorical_features if 'x_' in c]] == 0).sum(axis=1).astype(float)
 # df['1_count'] = (df == 1).sum(axis=1).astype(float)
-
 group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
 group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
-group_features3 = ['lmt', 'certValidBegin']  # 征信1
+group_features3 = ['lmt_bin', 'certValidBegin_bin']  # 征信1
 
 group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
 group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
@@ -88,38 +113,18 @@ for index, ind_features in enumerate(group_features):
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
     df.drop(columns=['new_ind' + str(index)], inplace=True)
 
-# 时间特征 certValidBegin
-df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
-df['begin_year'] = df['begin'].apply(lambda x: int(x[0:4]))
-df['begin_age_diff'] = df['begin_year'] - df['age']
-df['begin_age_ration'] = df['begin_year'] / df['age']
-df.drop(columns='begin', inplace=True)
-
-df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
-
-# 3778531200  3293136000
-# 3776198400  3326313600
-df['begin_span'] = df['certValidBegin'].apply(lambda x: 1 if 3326313600 <= x <= 3776198400 else 0)
-df['certValid_bin']=pd.cut(df['certValidBegin'],5,labels=[1,2,3,4,5])
-# print(df['certValid_bin'])
-for feat in numerical_features + ['certValidPeriod']:
-    df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
-# df['lmt_period']=df['lmt']/df['certValidPeriod']
-
-# 类别特征处理
-df['is_edu_equal'] = (df['edu'] == df['highestEdu']).astype(int)
-df['is_dist_certId_equal'] = (df['dist'] == df['certId']).astype(int)
-
 # 特殊处理
 # bankCard 5991
 # residentAddr 5288
 # certId 4033
 # dist 3738
-cols = ['bankCard', 'residentAddr', 'certId', 'dist']
-# 计数
+cols = ['bankCard', 'residentAddr', 'certId', 'dist',
+        'certValidPeriod', 'age', 'job', 'ethnic', 'basicLevel',
+        'linkRela','highestEdu']
 for col in cols:
-    col_nums = dict(df[col].value_counts())
-    df[col + '_nums'] = df[col].apply(lambda x: col_nums[x])
+    df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
+
+
 # 对lmt进行mean encoding
 for fea in tqdm(cols):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
