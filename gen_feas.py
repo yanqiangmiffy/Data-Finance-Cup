@@ -49,7 +49,6 @@ group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
 
 group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
 group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
-group_features6 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
 # 重要特征+其他组合
 # group_features5 = group_features1 + ['lmt']
 # group_features6 = group_features1 + ['certValidBegin']
@@ -86,6 +85,13 @@ for index, ind_features in enumerate(group_features):
     df.drop(columns=['new_ind' + str(index)], inplace=True)
 
 # 数值特征处理
+import time
+df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
+df['begin_year'] = df['begin'].apply(lambda x: int(x[0:4]))
+df['begin_age_diff'] = df['begin_year'] - df['age']
+df['begin_age_ration'] = df['begin_year'] / df['age']
+df.drop(columns='begin', inplace=True)
+
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
