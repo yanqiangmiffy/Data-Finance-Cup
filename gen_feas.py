@@ -1,13 +1,12 @@
 import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
+import time
 
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
-
-
 
 df = pd.concat([train, test], sort=False, axis=0)
 
@@ -88,28 +87,21 @@ for index, ind_features in enumerate(group_features):
         d = df[c].value_counts().to_dict()
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
     df.drop(columns=['new_ind' + str(index)], inplace=True)
-# 时间特征
-import time
-df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
 
+# 时间特征 certValidBegin
+df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
 df['begin_year'] = df['begin'].apply(lambda x: int(x[0:4]))
-df['begin_age_diff']=df['begin_year']-df['age']
-# df['now_begin_period']=df['begin_year']-2019-70
-#
-# df['stop'] = df['certValidStop'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
-# df['stop_year'] = df['stop'].apply(lambda x: int(x[0:4]))
-# df['now_stop_period']=df['stop_year']-2019-70
-# df['begin_month'] = df['begin'].apply(lambda x: int(x[5:7]))
-# df['begin_day'] = df['begin'].apply(lambda x: int(x[8:10]))
-df.drop(columns='begin',inplace=True)
-df.drop(columns='stop',inplace=True)
+df['begin_age_diff'] = df['begin_year'] - df['age']
+df['begin_age_ration'] = df['begin_year'] / df['age']
+df.drop(columns='begin', inplace=True)
+
+df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+
 # 3778531200  3293136000
 # 3776198400  3326313600
-
-df['begin_span'] = df['certValidBegin'].apply(lambda x:1 if 3326313600<=x <= 3776198400 else 0)
-
-# 数值特征处理
-df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+df['begin_span'] = df['certValidBegin'].apply(lambda x: 1 if 3326313600 <= x <= 3776198400 else 0)
+df['certValid_bin']=pd.cut(df['certValidBegin'],5,labels=[1,2,3,4,5])
+print(df['certValid_bin'])
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
 # df['lmt_period']=df['lmt']/df['certValidPeriod']
@@ -127,7 +119,7 @@ for col in cols:
     df[col + '_nums'] = df[col].apply(lambda x: col_nums[x])
 # 对lmt进行mean encoding
 for fea in tqdm(cols):
-    grouped_df = df.groupby(fea).agg({'lmt': [ 'mean', 'median']})
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
     # print(grouped_df)
