@@ -112,10 +112,10 @@ for index, ind_features in enumerate(group_features):
         d = df[c].value_counts().to_dict()
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
 
-    le = LabelEncoder()
-    le.fit(df['new_ind' + str(index)])
-    df['new_ind' + str(index)] = le.transform(df['new_ind' + str(index)])
-    # df.drop(columns=['new_ind' + str(index)], inplace=True)
+    # le = LabelEncoder()
+    # le.fit(df['new_ind' + str(index)])
+    # df['new_ind' + str(index)] = le.transform(df['new_ind' + str(index)])
+    df.drop(columns=['new_ind' + str(index)], inplace=True)
 
 # 特殊处理
 # bankCard 5991
