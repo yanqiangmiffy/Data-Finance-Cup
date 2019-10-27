@@ -1,28 +1,17 @@
 import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
-import time
-from sklearn.preprocessing import LabelEncoder
+from numpy import random
+random.seed(1314)
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
 test = pd.read_csv("new_data/test.csv")
 
 df = pd.concat([train, test], sort=False, axis=0)
-
-stats = []
-for col in df.columns:
-    stats.append((col, df[col].nunique(), df[col].isnull().sum() * 100 / train.shape[0],
-                  df[col].value_counts(normalize=True, dropna=False).values[0] * 100, df[col].dtype))
-
-stats_df = pd.DataFrame(stats, columns=['Feature', 'Unique_values', 'Percentage of missing values',
-                                        'Percentage of values in the biggest category', 'type'])
-stats_df.sort_values('Unique_values', ascending=False, inplace=True)
-stats_df.to_excel('tmp/stats_df.xlsx', index=None)
-
 # 特征工程
-
-df.fillna(value=0, inplace=True)  # bankCard存在空值
+df['missing'] = (df == -999).sum(axis=1).astype(float)  # 统计每行中为-999的个数
+df['bankCard'] = df['bankCard'].fillna(value=0)  # bankCard存在空值
 # 删除重复列
 duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                        'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
@@ -34,42 +23,32 @@ duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                       ['x_43'] + \
                       ['x_45'] + \
                       ['x_61']
+# 类别组合特征
+count = 0
+for c in duplicated_features:
+    if count == 0:
+        df['new_ind' + str(-1)] = df[c].astype(str) + '_'
+        count += 1
+    else:
+        df['new_ind' + str(-1)] += df[c].astype(str) + '_'
+for c in ['new_ind' + str(-1)]:
+    d = df[c].value_counts().to_dict()
+    df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
+df.drop(columns=['new_ind' + str(-1)], inplace=True)
+
 df = df.drop(columns=duplicated_features)
 print(df.shape)
 
 no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist', 'new_ind1', 'new_ind2']
 features = []
-numerical_features = ['lmt', 'certValidBegin', 'certValidStop']
+numerical_features = ['lmt', 'certValidBegin', 'certValidStop', 'missing']  # 不是严格意义的数值特征，可以当做类别特征
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
 
-# ========  lmt ==========
-df['lmt_bin'] = pd.cut(df['lmt'], 3, labels=[1, 2, 3])
-
-# ========  certValidBegin ============
-df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
-df['begin_span'] = df['certValidBegin'].apply(lambda x: 1 if 3326313600 <= x <= 3776198400 else 0)
-df['certValidBegin_bin'] = pd.cut(df['certValidBegin'], 20, labels=[i for i in range(20)])
-
-# certValidStop
-df['certValidStop_bin'] = pd.cut(df['certValidStop'], 20, labels=[i for i in range(20)])
-
-for feat in numerical_features + ['certValidPeriod']:
-    df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
-# df['lmt_period']=df['lmt']/df['certValidPeriod']
-
-# 类别特征处理
-df['is_edu_equal'] = (df['edu'] == df['highestEdu']).astype(int)
-df['is_dist_certId_equal'] = (df['dist'] == df['certId']).astype(int)
-
-# 特殊值count特征
-df['999_count'] = (df == -999).sum(axis=1).astype(float)
-# df['0_count'] = (df[[c for c in categorical_features if 'x_' in c]] == 0).sum(axis=1).astype(float)
-# df['1_count'] = (df == 1).sum(axis=1).astype(float)
 group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
 group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
-group_features3 = ['lmt_bin', 'certValidBegin_bin','certValidStop_bin']  # 征信1
+group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
 
-group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela', 'highestEdu']  # 基本属性
+group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
 group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
 # 重要特征+其他组合
 # group_features5 = group_features1 + ['lmt']
@@ -104,31 +83,37 @@ for index, ind_features in enumerate(group_features):
     for c in ['new_ind' + str(index)]:
         d = df[c].value_counts().to_dict()
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
+    df.drop(columns=['new_ind' + str(index)], inplace=True)
 
-    le = LabelEncoder()
-    le.fit(df['new_ind' + str(index)])
-    df['new_ind' + str(index)] = le.transform(df['new_ind' + str(index)])
-    # df.drop(columns=['new_ind' + str(index)], inplace=True)
+# 数值特征处理
+df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+# 类别特征处理
 
 # 特殊处理
 # bankCard 5991
 # residentAddr 5288
 # certId 4033
 # dist 3738
-cols = ['bankCard', 'residentAddr', 'certId', 'dist',
-        'certValidPeriod', 'age', 'job', 'ethnic', 'basicLevel',
-        'linkRela', 'highestEdu']
+cols = ['bankCard', 'residentAddr', 'certId', 'dist']
+# 计数
 for col in cols:
     df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
 
 # 对lmt进行mean encoding
-for fea in tqdm(['bankCard', 'residentAddr', 'certId', 'dist']):
+for fea in tqdm(cols):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
     # print(grouped_df)
     df = pd.merge(df, grouped_df, on=fea, how='left')
-# df = df.drop(columns=cols)  # 删除四列
+
+
+df = df.drop(columns=cols)  # 删除四列
+
+# cols = ['certValidPeriod', 'age', 'job', 'ethnic', 'basicLevel',
+#         'linkRela']
+# for col in cols:
+#     df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
 
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)

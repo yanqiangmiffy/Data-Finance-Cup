@@ -29,7 +29,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 import lightgbm as lgb
 import xgboost as xgb
-from catboost import CatBoostClassifier
+# from catboost import CatBoostClassifier
 
 # Hyperparameters distributions
 from scipy.stats import randint
@@ -62,11 +62,11 @@ train, test, no_features, features = load_data()
 X = train[features].values
 y = train['target'].astype('int32')
 # Transforming the problem into a classification (unbalanced)
-y_bin = (y > np.percentile(y, 90)).astype(int)
+# y_bin = (y > np.percentile(y, 90)).astype(int)
 clf = lgb.LGBMClassifier(boosting_type='gbdt',
                          class_weight='balanced',
                          objective='binary',
-                         n_jobs=1,
+                         n_jobs=-1,
                          verbose=0)
 search_spaces = {
     'learning_rate': Real(0.01, 1.0, 'log-uniform'),
@@ -131,6 +131,6 @@ opt = BayesSearchCV(clf,
                     return_train_score=False,
                     )
 
-best_params = report_perf(opt, X, y_bin, 'LightGBM',
+best_params = report_perf(opt, X, y, 'LightGBM',
                           callbacks=[DeltaXStopper(0.001),
                                      DeadlineStopper(60 * 5)])
