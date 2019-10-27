@@ -177,12 +177,7 @@ for fea in tqdm(['bankCard', 'residentAddr', 'certId', 'dist']):
     grouped_df = grouped_df.reset_index()
     # print(grouped_df)
     df = pd.merge(df, grouped_df, on=fea, how='left')
-cols = ['x_49', 'x_44', 'x_48', 'x_16', 'x_12', 'x_35', 'x_56',
-        'certValidBegin_flag', 'x_30', 'x_31', 'x_64',
-        '5yearBadloan', 'x_42', 'x_69', 'x_39']
-df = df.drop(columns=large_cols1)  # 删除四列
-df = df.drop(columns=large_cols2)  # 删除四列
-df = df.drop(columns=cols)  # 删除四列
+
 
 # dummies
 # df = pd.get_dummies(df, columns=categorical_features)
