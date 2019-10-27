@@ -34,7 +34,14 @@ def Gini(y_true, y_pred):
     return G_pred * 1. / G_true
 
 
+def evalerror(preds, dtrain):
+    labels = dtrain.get_label()
+    return 'gini', Gini(labels, preds), True
+
+
 train, test, no_features, features = load_data()
+# features=['lmt', 'certValidBegin', 'setupHour', 'residentAddr_lmt_median', 'dist_count', 'new_ind4_count', 'certValidStop', 'job', 'certId_suffix4', 'age', 'certId_count', 'dist_lmt_median', 'certId_lmt_median', 'certId_suffix3', 'certId_prefix3', 'loanProduct', 'new_ind1_count', 'dist_suffix4', 'dist_lmt_mean', 'residentAddr_lmt_mean', 'certId_lmt_mean', 'unpayOtherLoan', 'residentAddr_count', 'weekday', 'residentAddr_suffix4', 'residentAddr_suffix3', 'residentAddr_prefix3', 'x_46', 'gender', 'x_34', 'dist_suffix3', 'dist_prefix3', 'linkRela', 'bankCard_suffix4', 'x_33', 'bankCard_lmt_mean', 'bankCard_count', 'bankCard_prefix3', 'basicLevel', 'bankCard_lmt_median', 'x_68', 'new_ind2_count', 'x_72', 'x_67', 'ethnic', 'highestEdu', 'new_ind5_count', 'missing', 'x_62', 'edu']
+
 X = train[features].values
 y = train['target'].astype('int32')
 test_data = test[features].values
@@ -57,7 +64,7 @@ auc_cv = []
 pred_cv = []
 for k, (train_in, test_in) in enumerate(skf.split(X, y)):
     X_train, X_valid, y_train, y_valid = X[train_in], X[test_in], \
-                                       y[train_in], y[test_in]
+                                         y[train_in], y[test_in]
 
     # 数据结构
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -87,7 +94,9 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
                     num_boost_round=2000,
                     valid_sets=(lgb_train, lgb_eval),
                     early_stopping_rounds=100,
-                    verbose_eval=100, feature_name=features)
+                    verbose_eval=100,
+                    feval=evalerror,
+                    feature_name=features)
 
     print('................Start predict .........................')
     # 预测
