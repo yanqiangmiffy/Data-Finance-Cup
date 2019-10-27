@@ -16,6 +16,8 @@ dist
 - ['x_43', 'unpayIndvLoan']
 - ['x_45', 'unpayOtherLoan']
 - ['x_61', 'ncloseCreditCard']
+
+- 类别编码 One-Hot编码：有用
 ## 结果
 - lgb 0.733
 - xgb 0.72
