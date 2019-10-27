@@ -180,7 +180,7 @@ for fea in tqdm(['bankCard', 'residentAddr', 'certId', 'dist']):
 
 
 # dummies
-# df = pd.get_dummies(df, columns=categorical_features)
+df = pd.get_dummies(df, columns=categorical_features)
 
 df.head(100).to_csv('tmp/df.csv', index=None)
 print("df.shape:", df.shape)
