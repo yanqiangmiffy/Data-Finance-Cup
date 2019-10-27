@@ -49,40 +49,10 @@ duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
 df = df.drop(columns=duplicated_features)
 print(df.shape)
 
-no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist', 'new_ind1', 'new_ind2']
+no_features = ['id', 'target']
 features = []
-numerical_features = ['lmt', 'certValidBegin', 'certValidStop', 'missing']
+numerical_features = ['lmt', 'certValidBegin', 'certValidStop', 'missing']+ ['bankCard', 'residentAddr', 'certId', 'dist']
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
-
-# ========================== 类别特征组合 =========================
-
-group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
-group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
-group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
-
-group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
-group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan',
-                   'unpayNormalLoan', '5yearBadloan'] #
-# group_features6 = group_features1 + ['certValidBegin']
-group_features = [
-    group_features1, group_features2, group_features3, group_features4,
-    group_features5,
-    # group_features6
-]
-
-for index, ind_features in enumerate(group_features):
-    index += 1
-    count = 0
-    for c in ind_features:
-        if count == 0:
-            df['new_ind' + str(index)] = df[c].astype(str) + '_'
-            count += 1
-        else:
-            df['new_ind' + str(index)] += df[c].astype(str) + '_'
-    for c in ['new_ind' + str(index)]:
-        d = df[c].value_counts().to_dict()
-        df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
-    df.drop(columns=['new_ind' + str(index)], inplace=True)
 
 # ========================== 类别count特征 =========================
 # cols=['bankCard', 'residentAddr', 'certId', 'dist', 'certValidPeriod', 'age', 'job', 'ethnic', 'basicLevel',
@@ -90,17 +60,63 @@ for index, ind_features in enumerate(group_features):
 # for col in cols:
 #     df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
 
-cols = ['bankCard', 'residentAddr', 'certId', 'dist']
+large_cols1 = ['bankCard', 'residentAddr', 'certId', 'dist']
 # 计数
-for col in cols:
+for col in large_cols1:
     col_nums = dict(df[col].value_counts())
     df[col + '_count'] = df[col].apply(lambda x: col_nums[x])
+
+large_cols2 = ['basicLevel', 'ethnic', 'age', 'setupHour', 'job', 'edu',
+        'linkRela', 'highestEdu', 'weekday', 'x_34', 'x_33']
+for col in large_cols2:
+    col_nums = dict(df[col].value_counts())
+    df[col + '_count'] = df[col].apply(lambda x: col_nums[x])
+
+
+# ========================== 类别特征组合 =========================
+def create_group_fea(df_, groups_fea, group_name):
+    count = 0
+    for c in groups_fea:
+        if count == 0:
+            df_[group_name] = df_[c].astype(str) + '_'
+            count += 1
+        else:
+            df_[group_name] += df_[c].astype(str) + '_'
+    for c in [group_name]:
+        tmp_d = df_[c].value_counts().to_dict()
+        df_['%s_count' % c] = df_[c].apply(lambda x: tmp_d.get(x, 0))
+    df_.drop(columns=[group_name], inplace=True)
+    return df_
+
+
+group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
+group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
+group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
+
+group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
+group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan',
+                   'unpayNormalLoan', '5yearBadloan']  #
+group_features = [
+    group_features1, group_features2,
+    group_features3,
+    group_features4,
+    group_features5,
+]
+
+for index, groups in enumerate(group_features):
+    index += 1
+    name = 'group_features' + str(index)
+    df = create_group_fea(df, groups, name)
 
 # ========================== 特殊处理 =========================
 # certValidBegin
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
+
+# 用户基本信息
+group_features6 = ['gender', 'age', 'edu', 'job', 'ethnic', 'highestEdu']
+df = create_group_fea(df, group_features6, 'group_features6')
 
 
 def cert_val_transform(x):
@@ -115,42 +131,43 @@ def cert_val_transform(x):
     if 3326313600 <= x <= 3776198400:
         return 1
     elif x > 3776198400:
-        return -1
-    else:
-        return -2
-
-
-df['certValidBegin_flag'] = df['certValidBegin'].apply(lambda x: cert_val_transform(x))
-
-
-# bankCard
-# target == 1的时候 bankCard：开头两位主要为623 622 只有一个为955
-def bankCard_transform(x):
-    """
-
-    :param x:
-    :return:
-    """
-    x = str(x)
-
-    if x[:3] == '622':
-        return 1
-    elif x[:3] == '623':
         return 2
     else:
-        return -1
+        return 3
 
 
-df['bankCard_flag'] = df['bankCard'].apply(lambda x: bankCard_transform(x))
+group_features7 = []
+df['certValidBegin_flag'] = df['certValidBegin'].apply(lambda x: cert_val_transform(x))
+group_features7.append('certValidBegin_flag')
 
-cols = ['bankCard', 'residentAddr', 'certId', 'dist']
-for col in cols:
-    df[col+'_prefix3'] = df[col].apply(lambda x: x // 1000)
-    df[col+'_suffix3'] = df[col].apply(lambda x: x % 1000)
-cols = ['bankCard', 'residentAddr', 'certId', 'dist']
-for col in cols:
-    df[col+'_prefix4'] = df[col].apply(lambda x: x // 10000)
-    df[col+'_suffix4'] = df[col].apply(lambda x: x % 10000)
+
+def id_num_transform(df_, col_name, base=1000):
+    df_[col_name + '_prefix'] = df_[col_name].apply(lambda x: x // base)
+    df_[col_name + '_suffix'] = df_[col_name].apply(lambda x: x % base)
+    return df_
+
+
+df = id_num_transform(df, 'certId')
+group_features7.append('certId_prefix')
+group_features7.append('certId_suffix')
+df = id_num_transform(df, 'dist')
+group_features7.append('dist_prefix')
+group_features7.append('dist_suffix')
+df = create_group_fea(df, group_features7, 'group_features7')
+
+# 借贷信息
+df['lmt_bin'] = pd.cut(df['lmt'], 5, labels=[1, 2, 3, 4, 5])
+group_features8 = ['loanProduct', 'lmt_bin', 'basicLevel', 'linkRela', 'setupHour', 'weekday']
+df = create_group_fea(df, group_features8, 'group_features8')
+
+group_features9 = []
+df = id_num_transform(df, 'bankCard')
+df = id_num_transform(df, 'residentAddr')
+group_features9.append('bankCard_prefix')
+group_features9.append('bankCard_suffix')
+group_features9.append('residentAddr_prefix')
+group_features9.append('residentAddr_suffix')
+df = create_group_fea(df, group_features9, 'group_features9')
 
 # ========================== mean encoding 特殊处理 =========================
 # 对lmt进行mean encoding
@@ -160,11 +177,15 @@ for fea in tqdm(['bankCard', 'residentAddr', 'certId', 'dist']):
     grouped_df = grouped_df.reset_index()
     # print(grouped_df)
     df = pd.merge(df, grouped_df, on=fea, how='left')
+cols = ['x_49', 'x_44', 'x_48', 'x_16', 'x_12', 'x_35', 'x_56',
+        'certValidBegin_flag', 'x_30', 'x_31', 'x_64',
+        '5yearBadloan', 'x_42', 'x_69', 'x_39']
+df = df.drop(columns=large_cols1)  # 删除四列
+df = df.drop(columns=large_cols2)  # 删除四列
 df = df.drop(columns=cols)  # 删除四列
 
 # dummies
 # df = pd.get_dummies(df, columns=categorical_features)
-
 
 df.head(100).to_csv('tmp/df.csv', index=None)
 print("df.shape:", df.shape)

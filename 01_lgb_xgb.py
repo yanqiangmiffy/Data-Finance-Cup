@@ -115,7 +115,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
 lgb.plot_importance(gbm, max_num_features=20)
 plt.show()
 
-### 特征选择
+# 特征选择
 df = pd.DataFrame(train[features].columns.tolist(), columns=['feature'])
 df['importance'] = list(gbm.feature_importance())  # 特征分数
 df = df.sort_values(by='importance', ascending=False)
