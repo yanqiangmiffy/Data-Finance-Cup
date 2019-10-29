@@ -111,7 +111,7 @@ def get_features_x(data):
         res += 2 ** i * data[x_strong_features[i]]
     model_sample_strong_feature['load_1_strong'] = res
 
-    for c1, c2 in combinations(group_features1, 2):
+    for c1, c2 in combinations(x_strong_features, 2):
         model_sample_strong_feature[c1 + '/' + c2] = data[c1] / (data[c2] + 1e-10)
 
     return model_sample_strong_feature
@@ -119,12 +119,12 @@ def get_features_x(data):
 
 df = get_features_x(df)
 
-fea_score = pd.read_excel('tmp/feature_score.xlsx')
-cols = fea_score[fea_score['importance'] == 0]['feature'].values.tolist()
-df=df.drop(columns=cols)
+# fea_score = pd.read_excel('tmp/feature_score.xlsx')
+# cols = fea_score[fea_score['importance'] == 0]['feature'].values.tolist()
+# df=df.drop(columns=cols)
 
 # dummies
-# df = pd.get_dummies(df, columns=categorical_features)
+df = pd.get_dummies(df, columns=categorical_features)
 df.head().to_csv('tmp/df.csv', index=None)
 print("df.shape:", df.shape)
 
