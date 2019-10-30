@@ -15,3 +15,8 @@
 # weekday 7
 # x_34 7
 # basicLevel 6
+
+# socre1
+cv auc mean score 0.7170894720604779
+cv gini mean score 0.4341789441209558
+lb:0.76
