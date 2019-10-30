@@ -40,7 +40,6 @@ def evalerror(preds, dtrain):
 
 
 train, test, no_features, features = load_data()
-# features=['lmt', 'certValidBegin', 'setupHour', 'residentAddr_lmt_median', 'dist_count', 'new_ind4_count', 'certValidStop', 'job', 'certId_suffix4', 'age', 'certId_count', 'dist_lmt_median', 'certId_lmt_median', 'certId_suffix3', 'certId_prefix3', 'loanProduct', 'new_ind1_count', 'dist_suffix4', 'dist_lmt_mean', 'residentAddr_lmt_mean', 'certId_lmt_mean', 'unpayOtherLoan', 'residentAddr_count', 'weekday', 'residentAddr_suffix4', 'residentAddr_suffix3', 'residentAddr_prefix3', 'x_46', 'gender', 'x_34', 'dist_suffix3', 'dist_prefix3', 'linkRela', 'bankCard_suffix4', 'x_33', 'bankCard_lmt_mean', 'bankCard_count', 'bankCard_prefix3', 'basicLevel', 'bankCard_lmt_median', 'x_68', 'new_ind2_count', 'x_72', 'x_67', 'ethnic', 'highestEdu', 'new_ind5_count', 'missing', 'x_62', 'edu']
 
 X = train[features].values
 y = train['target'].astype('int32')
@@ -67,8 +66,8 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
                                          y[train_in], y[test_in]
 
     # 数据结构
-    lgb_train = lgb.Dataset(X_train, y_train)
-    lgb_eval = lgb.Dataset(X_valid, y_valid, reference=lgb_train)
+    lgb_train = lgb.Dataset(X_train, y_train,params={'verbose': -1})
+    lgb_eval = lgb.Dataset(X_valid, y_valid, params={'verbose': -1},reference=lgb_train)
 
     # 设置参数
     params = {
@@ -82,6 +81,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
         'feature_fraction': 0.7,
         'bagging_fraction': 0.7,
         'bagging_freq': 5,
+        'verbose': -1
         # 'lambda_l1':0.25,
         # 'lambda_l2':0.5,
         # 'scale_pos_weight':10.0/1.0, #14309.0 / 691.0, #不设置
@@ -96,7 +96,8 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
                     early_stopping_rounds=100,
                     verbose_eval=100,
                     feval=evalerror,
-                    feature_name=features)
+                    feature_name=features,
+                    )
 
     print('................Start predict .........................')
     # 预测

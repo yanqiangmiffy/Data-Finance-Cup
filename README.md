@@ -69,3 +69,14 @@ GINI系数的计算步骤如下：
 版权声明：本文为CSDN博主「小墨鱼~~」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
 原文链接：https://blog.csdn.net/zwqjoy/article/details/84859405
 ```
+
+## 相关知识
+银行卡卡号前六位为BIN号（银行标识代码），由银行卡组织向ISO（国际标准化组织）申请并分配给发卡银行。
+其中BIN号“62”打头的为银联卡，“4”打头的为VISA卡，“5”打头的为万事达卡，“35”打头的为JCB卡，“37”打头的为美国运通卡。
+https://www.zhihu.com/question/20880750
+https://zhidao.baidu.com/question/587237661.html
+
+## 规则发现
+1. 当target为1的时候，loadProduct只为1和3，没有2
+2. 当target为1的时候，bankCard没有9开头的银行号，另外也有些其他4开头的没有
+3. 当target为1的时候，certValBegin的在两个值的范围，具体可见gen_feas

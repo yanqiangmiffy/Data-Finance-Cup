@@ -1,15 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import *
 from numpy import random
-
-random.seed(1314)
-train = pd.read_csv("new_data/train.csv")
-train_target = pd.read_csv('new_data/train_target.csv')
-train = train.merge(train_target, on='id')
-test = pd.read_csv("new_data/test.csv")
-
-df = pd.concat([train, test], sort=False, axis=0)
 
 
 def simple_statics():
@@ -48,7 +40,51 @@ def simple_statics():
     stats_df.sort_values('Unique_values', ascending=False, inplace=True)
     stats_df.to_excel('tmp/stats_test.xlsx', index=None)
 
+
+def cert_val_transform(x):
+    """
+    target==1的时候 certValidBegin的范围为：
+    # 3778531200  3293136000
+    # 3776198400  3326313600
+    :param x:
+    :return:
+    """
+
+    if 3326313600 <= x <= 3776198400:
+        return 1
+    elif x > 3776198400:
+        return 2
+    else:
+        return 3
+
+
+def create_group_fea(df_, groups_fea, group_name):
+    count = 0
+    for c in groups_fea:
+        if count == 0:
+            df_[group_name] = df_[c].astype(str) + '_'
+            count += 1
+        else:
+            df_[group_name] += df_[c].astype(str) + '_'
+    for c in [group_name]:
+        tmp_d = df_[c].value_counts().to_dict()
+        df_['%s_count' % c] = df_[c].apply(lambda x: tmp_d.get(x, 0))
+    lb = LabelEncoder()
+    df_[group_name] = lb.fit_transform(df_[group_name])
+    # df_.drop(columns=[group_name], inplace=True)
+    return df_
+
+
 # simple_statics()
+
+
+random.seed(1314)
+train = pd.read_csv("new_data/train.csv")
+train_target = pd.read_csv('new_data/train_target.csv')
+train = train.merge(train_target, on='id')
+test = pd.read_csv("new_data/test.csv")
+
+df = pd.concat([train, test], sort=False, axis=0)
 
 # ========================== 数据预处理 =========================
 df.fillna(value=-999, inplace=True)  # bankCard存在空值
@@ -71,10 +107,82 @@ print(df.shape)
 no_features = ['id', 'target']
 features = []
 
-df.head(100).to_csv('tmp/df.csv', index=None)
-print("df.shape:", df.shape)
+# ===================== 用户基本属性信息 =====================
+# certId, gender, age, dist, edu, job, ethnic, highestEdu, certValidBegin, certValidStop,
+
+# certId
+df['certId_first2'] = df['certId'].apply(lambda x: int(str(x)[:2]))  # 前两位
+df['certId_middle2'] = df['certId'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
+df['certId_last2'] = df['certId'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
+
+# print(len(df['certId_first2'].value_counts()))  # 31
+# print(len(df['certId_middle2'].value_counts()))  # 48
+# print(len(df['certId_last2'].value_counts()))  # 52
+
+# dist
+df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
+df['dist_middle2'] = df['dist'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
+df['dist_last2'] = df['dist'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
+
+# print(len(df['dist_first2'].value_counts()))  # 32
+# print(len(df['dist_middle2'].value_counts()))  # 48
+# print(len(df['dist_last2'].value_counts()))  # 52
+
+# certValidBegin
+df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+# df['certValidBegin_flag'] = df['certValidBegin'].apply(lambda x: cert_val_transform(x))
+df['certValidBegin_bin'] = pd.cut(df['certValidBegin'], 100, labels=[i for i in range(100)])
+
+print(df['certValidBegin_bin'].value_counts())  # 52
+
+# ===================== 借贷相关信息 =====================
+# loanProduct, lmt, basicLevel, bankCard, residentAddr, linkRela,setupHour, weekday
+
+# bankCard 正常9位
+df['bankCard'] = df['bankCard'].astype(int)
+df['bankCard_first6'] = df['bankCard'].apply(lambda x: int(str(x)[:6]) if x != -999 else -999)
+df['bankCard_last3'] = df['bankCard'].apply(lambda x: int(str(x)[6:].strip()) if x != -999 else -999)
+# print(df['bankCard_first6'].value_counts()) # 174
+df['bankCard_first3'] = df['bankCard'].apply(lambda x: int(str(x)[:3]) if x != -999 else -999)
+df['bankCard_middle3'] = df['bankCard'].apply(lambda x: int(str(x)[3:6]) if x != -999 else -999)
+df['bankCard_last3'] = df['bankCard'].apply(lambda x: int(str(x)[6:]) if x != -999 else -999)
+# print(df['bankCard_first3'].value_counts()) # 20
+
+# residentAddr
+df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
+df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
+df['residentAddr_last2'] = df['residentAddr'].apply(lambda x: int(str(x)[4:6]) if x != -999 else -999)  # 最后两位
+
+# ===================== 用户征信相关信息 =====================
+# x_0至x_78以及ncloseCreditCard, unpayIndvLoan, unpayOtherLoan, unpayNormalLoan, 5yearBadloan
+
+# ===================== 类别组合特征 =====================
+certId_first2_loanProduct = ['certId_first2', 'loanProduct']
+df = create_group_fea(df, certId_first2_loanProduct, 'certId_first2_loanProduct')
+
+certId_middle2_loanProduct = ['certId_middle2', 'loanProduct']
+df = create_group_fea(df, certId_middle2_loanProduct, 'certId_middle2_loanProduct')
+
+# ===================== count特征 =====================
+count_latge_feas = ['bankCard', 'residentAddr', 'certId', 'dist', 'certValidPeriod',
+                    'age', 'job', 'ethnic', 'basicLevel', 'linkRela']
+for col in count_latge_feas:
+    df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
+
+count_cert_feas = ['certId_first2', 'certId_middle2', 'certId_last2']
+for col in count_cert_feas:
+    df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
+
+# ===================== 聚合特征 =====================
+for fea in tqdm(['bankCard', 'residentAddr', 'dist', 'certId_first2', 'certId_middle2', 'certId_last2']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    df = pd.merge(df, grouped_df, on=fea, how='left')
 
 features = [fea for fea in df.columns if fea not in no_features]
+df.head(100).to_csv('tmp/df.csv', index=None)
+print("df.shape:", df.shape)
 train, test = df[:len(train)], df[len(train):]
 
 
