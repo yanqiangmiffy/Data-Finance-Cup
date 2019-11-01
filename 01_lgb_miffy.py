@@ -34,7 +34,13 @@ def Gini(y_true, y_pred):
     return G_pred * 1. / G_true
 
 
+def evalerror(preds, dtrain):
+    labels = dtrain.get_label()
+    return 'gini', Gini(labels, preds), True
+
+
 train, test, no_features, features = load_data()
+
 X = train[features].values
 y = train['target'].astype('int32')
 test_data = test[features].values
@@ -57,11 +63,11 @@ auc_cv = []
 pred_cv = []
 for k, (train_in, test_in) in enumerate(skf.split(X, y)):
     X_train, X_valid, y_train, y_valid = X[train_in], X[test_in], \
-                                       y[train_in], y[test_in]
+                                         y[train_in], y[test_in]
 
     # 数据结构
-    lgb_train = lgb.Dataset(X_train, y_train)
-    lgb_eval = lgb.Dataset(X_valid, y_valid, reference=lgb_train)
+    lgb_train = lgb.Dataset(X_train, y_train,params={'verbose': -1})
+    lgb_eval = lgb.Dataset(X_valid, y_valid, params={'verbose': -1},reference=lgb_train)
 
     # 设置参数
     params = {
@@ -75,6 +81,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
         'feature_fraction': 0.7,
         'bagging_fraction': 0.7,
         'bagging_freq': 5,
+        'verbose': -1
         # 'lambda_l1':0.25,
         # 'lambda_l2':0.5,
         # 'scale_pos_weight':10.0/1.0, #14309.0 / 691.0, #不设置
@@ -87,7 +94,10 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
                     num_boost_round=2000,
                     valid_sets=(lgb_train, lgb_eval),
                     early_stopping_rounds=100,
-                    verbose_eval=100, feature_name=features)
+                    verbose_eval=100,
+                    feval=evalerror,
+                    feature_name=features,
+                    )
 
     print('................Start predict .........................')
     # 预测
@@ -106,7 +116,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
 lgb.plot_importance(gbm, max_num_features=20)
 plt.show()
 
-### 特征选择
+# 特征选择
 df = pd.DataFrame(train[features].columns.tolist(), columns=['feature'])
 df['importance'] = list(gbm.feature_importance())  # 特征分数
 df = df.sort_values(by='importance', ascending=False)
