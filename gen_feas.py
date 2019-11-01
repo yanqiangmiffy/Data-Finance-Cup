@@ -114,12 +114,34 @@ df = create_group_fea(df, certId_last2_lmt, 'certId_last2_lmt')
 
 certId_first2_basicLevel = ['certId_first2', 'basicLevel']
 df = create_group_fea(df, certId_first2_basicLevel, 'certId_first2_basicLevel')
-
 certId_middle2_basicLevel = ['certId_middle2', 'basicLevel']
 df = create_group_fea(df, certId_middle2_basicLevel, 'certId_middle2_basicLevel')
-
 certId_last2_basicLevel = ['certId_last2', 'basicLevel']
 df = create_group_fea(df, certId_last2_basicLevel, 'certId_last2_basicLevel')
+
+# dist
+df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
+df['dist_middle2'] = df['dist'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
+df['dist_last2'] = df['dist'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
+
+dist_first2_loanProduct = ['dist_first2', 'loanProduct']
+df = create_group_fea(df, dist_first2_loanProduct, 'dist_first2_loanProduct')
+dist_middle2_loanProduct = ['dist_middle2', 'loanProduct']
+df = create_group_fea(df, dist_middle2_loanProduct, 'dist_middle2_loanProduct')
+dist_last2_loanProduct = ['dist_last2', 'loanProduct']
+df = create_group_fea(df, dist_last2_loanProduct, 'dist_last2_loanProduct')
+
+# residentAddr
+df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
+df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
+df['residentAddr_last2'] = df['residentAddr'].apply(lambda x: int(str(x)[4:6]) if x != -999 else -999)  # 最后两位
+
+residentAddr_first2_loanProduct = ['residentAddr_first2', 'loanProduct']
+df = create_group_fea(df, residentAddr_first2_loanProduct, 'residentAddr_first2_loanProduct')
+residentAddr_middle2_loanProduct = ['residentAddr_middle2', 'loanProduct']
+df = create_group_fea(df, residentAddr_middle2_loanProduct, 'residentAddr_middle2_loanProduct')
+residentAddr_last2_loanProduct = ['residentAddr_last2', 'loanProduct']
+df = create_group_fea(df, residentAddr_last2_loanProduct, 'residentAddr_last2_loanProduct')
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
@@ -150,6 +172,20 @@ for fea in tqdm(['certId_first2', 'certId_middle2', 'certId_last2']):
     grouped_df = grouped_df.reset_index()
     # print(grouped_df)
     df = pd.merge(df, grouped_df, on=fea, how='left')
+
+for fea in tqdm(['certId_first2_loanProduct', 'certId_first2_basicLevel']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    # print(grouped_df)
+    df = pd.merge(df, grouped_df, on=fea, how='left')
+
+for fea in tqdm(['dist_first2', 'dist_middle2', 'dist_last2']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    df = pd.merge(df, grouped_df, on=fea, how='left')
+
 
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)
