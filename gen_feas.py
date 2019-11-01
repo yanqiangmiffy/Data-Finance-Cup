@@ -1,7 +1,9 @@
 import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
+from numpy import random
 
+random.seed(2019)
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
@@ -49,25 +51,10 @@ group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
 
 group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
 group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
-# 重要特征+其他组合
-# group_features5 = group_features1 + ['lmt']
-# group_features6 = group_features1 + ['certValidBegin']
-# group_features7 = group_features1 + ['lmt', 'certValidBegin']
-#
-# group_features8 = group_features2 + ['lmt']
-# group_features9 = group_features2 + ['certValidBegin']
-# group_features10 = group_features2 + ['lmt', 'certValidBegin']
-#
-# group_features11 = group_features4 + ['lmt']
-# group_features12 = group_features4 + ['certValidBegin']
-# group_features13 = group_features4 + ['lmt', 'certValidBegin']
 
 group_features = [
     group_features1, group_features2, group_features3, group_features4,
     group_features5,
-    # group_features6, group_features7, group_features8,
-    # group_features9, group_features10, group_features11, group_features12,
-    # group_features13
 ]
 
 for index, ind_features in enumerate(group_features):
@@ -84,8 +71,9 @@ for index, ind_features in enumerate(group_features):
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
     df.drop(columns=['new_ind' + str(index)], inplace=True)
 
-
 from sklearn.preprocessing import LabelEncoder
+
+
 def create_group_fea(df_, groups_fea, group_name):
     count = 0
     for c in groups_fea:
@@ -101,25 +89,18 @@ def create_group_fea(df_, groups_fea, group_name):
     df_[group_name] = lb.fit_transform(df_[group_name])
     # df_.drop(columns=[group_name], inplace=True)
     return df_
+
+
 # certId
 df['certId_first2'] = df['certId'].apply(lambda x: int(str(x)[:2]))  # 前两位
 df['certId_middle2'] = df['certId'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
 df['certId_last2'] = df['certId'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
-certId_first2_loanProduct = ['certId_first2', 'loanProduct']
-df = create_group_fea(df, certId_first2_loanProduct, 'certId_first2_loanProduct')
 
-certId_middle2_loanProduct = ['certId_middle2', 'loanProduct']
-df = create_group_fea(df, certId_middle2_loanProduct, 'certId_middle2_loanProduct')
-
-certId_last2_loanProduct = ['certId_last2', 'loanProduct']
-df = create_group_fea(df, certId_last2_loanProduct, 'certId_last2_loanProduct')
 # 组合特征
 certId_first2_loanProduct = ['certId_first2', 'loanProduct']
 df = create_group_fea(df, certId_first2_loanProduct, 'certId_first2_loanProduct')
-
 certId_middle2_loanProduct = ['certId_middle2', 'loanProduct']
 df = create_group_fea(df, certId_middle2_loanProduct, 'certId_middle2_loanProduct')
-
 certId_last2_loanProduct = ['certId_last2', 'loanProduct']
 df = create_group_fea(df, certId_last2_loanProduct, 'certId_last2_loanProduct')
 
@@ -131,6 +112,14 @@ df = create_group_fea(df, certId_middle2_lmt, 'certId_middle2_lmt')
 certId_last2_lmt = ['certId_last2', 'lmt_bin']
 df = create_group_fea(df, certId_last2_lmt, 'certId_last2_lmt')
 
+certId_first2_basicLevel = ['certId_first2', 'basicLevel']
+df = create_group_fea(df, certId_first2_basicLevel, 'certId_first2_basicLevel')
+
+certId_middle2_basicLevel = ['certId_middle2', 'basicLevel']
+df = create_group_fea(df, certId_middle2_basicLevel, 'certId_middle2_basicLevel')
+
+certId_last2_basicLevel = ['certId_last2', 'basicLevel']
+df = create_group_fea(df, certId_last2_basicLevel, 'certId_last2_basicLevel')
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
@@ -155,10 +144,12 @@ for fea in tqdm(cols):
     df = pd.merge(df, grouped_df, on=fea, how='left')
 df = df.drop(columns=cols)  # 删除四列
 
-# cols = ['certValidPeriod', 'age', 'job', 'ethnic', 'basicLevel',
-#         'linkRela']
-# for col in cols:
-#     df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
+for fea in tqdm(['certId_first2', 'certId_middle2', 'certId_last2']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    # print(grouped_df)
+    df = pd.merge(df, grouped_df, on=fea, how='left')
 
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)
