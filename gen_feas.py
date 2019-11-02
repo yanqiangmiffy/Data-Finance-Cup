@@ -50,7 +50,7 @@ test = pd.read_csv("new_data/test.csv")
 df = pd.concat([train, test], sort=False, axis=0)
 # 特征工程
 df['missing'] = (df == -1).sum(axis=1).astype(float)  # 统计每行中为-999的个数
-df['bankCard'] = df['bankCard'].fillna(value=-999)  # bankCard存在空值
+df['bankCard'] = df['bankCard'].fillna(value=999999999)  # bankCard存在空值
 # 删除重复列
 duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                        'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
@@ -226,28 +226,21 @@ df = create_group_fea(df, residentAddr_last2_edu, 'residentAddr_last2_edu')
 
 # bankCard
 df['bankCard'] = df['bankCard'].astype(int)
-df['bankCard_first3'] = df['bankCard'].apply(lambda x: int(str(x)[:3].strip()) if x != -999 else -999)
-df['bankCard_middle3'] = df['bankCard'].apply(lambda x: int(str(x)[3:6].strip()) if x != -999 else -999)
+df['bankCard_first6'] = df['bankCard'].apply(lambda x: int(str(x)[:6]) if x != -999 else -999)
 df['bankCard_last3'] = df['bankCard'].apply(lambda x: int(str(x)[6:].strip()) if x != -999 else -999)
 
-bankCard_first3_loanProduct = ['bankCard_first3', 'loanProduct']
-df = create_group_fea(df, bankCard_first3_loanProduct, 'bankCard_first3_loanProduct')
-bankCard_middle3_loanProduct = ['bankCard_middle3', 'loanProduct']
-df = create_group_fea(df, bankCard_middle3_loanProduct, 'bankCard_middle3_loanProduct')
+bankCard_first6_loanProduct = ['bankCard_first6', 'loanProduct']
+df = create_group_fea(df, bankCard_first6_loanProduct, 'bankCard_first6_loanProduct')
 bankCard_last3_loanProduct = ['bankCard_last3', 'loanProduct']
 df = create_group_fea(df, bankCard_last3_loanProduct, 'bankCard_last3_loanProduct')
 
-bankCard_first3_basicLevel = ['bankCard_first3', 'basicLevel']
-df = create_group_fea(df, bankCard_first3_basicLevel, 'bankCard_first3_basicLevel')
-bankCard_middle3_basicLevel = ['bankCard_middle3', 'basicLevel']
-df = create_group_fea(df, bankCard_middle3_basicLevel, 'bankCard_middle3_basicLevel')
+bankCard_first6_basicLevel = ['bankCard_first6', 'basicLevel']
+df = create_group_fea(df, bankCard_first6_basicLevel, 'bankCard_first6_basicLevel')
 bankCard_last3_basicLevel = ['bankCard_last3', 'basicLevel']
 df = create_group_fea(df, bankCard_last3_basicLevel, 'bankCard_last3_basicLevel')
 
-bankCard_first3_edu = ['residentAddr_first2', 'edu']
-df = create_group_fea(df, bankCard_first3_edu, 'bankCard_first3_edu')
-bankCard_middle3_edu = ['bankCard_middle3', 'edu']
-df = create_group_fea(df, bankCard_middle3_edu, 'bankCard_middle3_edu')
+bankCard_first6_edu = ['bankCard_first6', 'edu']
+df = create_group_fea(df, bankCard_first6_edu, 'bankCard_first6_edu')
 bankCard_last3_edu = ['bankCard_last3', 'edu']
 df = create_group_fea(df, bankCard_last3_edu, 'bankCard_last3_edu')
 
@@ -281,7 +274,9 @@ for fea in tqdm(['certId_first2', 'certId_middle2', 'certId_last2']):
     # print(grouped_df)
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
-for fea in tqdm(['certId_first2_loanProduct', 'certId_first2_basicLevel']):
+for fea in tqdm(['certId_first2_loanProduct', 'certId_middle2_loanProduct', 'certId_last2_loanProduct',
+                 'certId_first2_basicLevel', 'certId_middle2_basicLevel', 'certId_last2_basicLevel',
+                 'certId_first2_edu', 'certId_middle2_edu', 'certId_last2_edu']):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
@@ -294,13 +289,22 @@ for fea in tqdm(['dist_first2', 'dist_middle2', 'dist_last2']):
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
+for fea in tqdm([
+    'dist_first2_loanProduct', 'dist_middle2_loanProduct', 'dist_last2_loanProduct',
+    'dist_first2_basicLevel', 'dist_middle2_basicLevel', 'dist_last2_basicLevel',
+    'dist_first2_edu', 'dist_middle2_edu', 'dist_last2_edu']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    df = pd.merge(df, grouped_df, on=fea, how='left')
+
 for fea in tqdm(['residentAddr_first2', 'residentAddr_middle2', 'residentAddr_last2']):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
-for fea in tqdm(['bankCard_first3','bankCard_middle3','bankCard_last3']):
+for fea in tqdm(['bankCard_first6', 'bankCard_last3']):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
