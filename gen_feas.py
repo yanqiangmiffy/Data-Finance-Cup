@@ -164,6 +164,20 @@ df = create_group_fea(df, certId_middle2_edu, 'certId_middle2_edu')
 certId_last2_edu = ['certId_last2', 'edu']
 df = create_group_fea(df, certId_last2_edu, 'certId_last2_edu')
 
+certId_first2_job = ['certId_first2', 'job']
+df = create_group_fea(df, certId_first2_job, 'certId_first2_job')
+certId_middle2_job = ['certId_middle2', 'job']
+df = create_group_fea(df, certId_middle2_job, 'certId_middle2_job')
+certId_last2_job = ['certId_last2', 'job']
+df = create_group_fea(df, certId_last2_job, 'certId_last2_job')
+
+certId_first2_x33 = ['certId_first2', 'x_33']
+df = create_group_fea(df, certId_first2_x33, 'certId_first2_x33')
+certId_middle2_x33 = ['certId_middle2', 'x_33']
+df = create_group_fea(df, certId_middle2_x33, 'certId_middle2_x33')
+certId_last2_x33 = ['certId_last2', 'x_33']
+df = create_group_fea(df, certId_last2_x33, 'certId_last2_x33')
+
 # dist
 df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
 df['dist_middle2'] = df['dist'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
@@ -190,6 +204,13 @@ df = create_group_fea(df, dist_middle2_edu, 'dist_middle2_edu')
 dist_last2_edu = ['dist_last2', 'edu']
 df = create_group_fea(df, dist_last2_edu, 'dist_last2_edu')
 
+dist_first2_job = ['dist_first2', 'job']
+df = create_group_fea(df, dist_first2_job, 'dist_first2_job')
+dist_middle2_job = ['dist_middle2', 'job']
+df = create_group_fea(df, dist_middle2_job, 'dist_middle2_job')
+dist_last2_job = ['dist_last2', 'job']
+df = create_group_fea(df, dist_last2_job, 'dist_last2_job')
+
 # residentAddr
 df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
 df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
@@ -209,13 +230,19 @@ df = create_group_fea(df, residentAddr_middle2_basicLevel, 'residentAddr_middle2
 residentAddr_last2_basicLevel = ['residentAddr_last2', 'basicLevel']
 df = create_group_fea(df, residentAddr_last2_basicLevel, 'residentAddr_last2_basicLevel')
 
-
 residentAddr_first2_edu = ['residentAddr_first2', 'edu']
 df = create_group_fea(df, residentAddr_first2_edu, 'residentAddr_first2_edu')
 residentAddr_middle2_edu = ['residentAddr_middle2', 'edu']
 df = create_group_fea(df, residentAddr_middle2_edu, 'residentAddr_middle2_edu')
 residentAddr_last2_edu = ['residentAddr_last2', 'edu']
 df = create_group_fea(df, residentAddr_last2_edu, 'residentAddr_last2_edu')
+
+residentAddr_first2_job = ['residentAddr_first2', 'job']
+df = create_group_fea(df, residentAddr_first2_job, 'residentAddr_first2_job')
+residentAddr_middle2_job = ['residentAddr_middle2', 'job']
+df = create_group_fea(df, residentAddr_middle2_job, 'residentAddr_middle2_job')
+residentAddr_last2_job = ['residentAddr_last2', 'job']
+df = create_group_fea(df, residentAddr_last2_job, 'residentAddr_last2_job')
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
