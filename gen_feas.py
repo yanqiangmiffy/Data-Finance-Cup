@@ -131,6 +131,14 @@ df = create_group_fea(df, dist_middle2_loanProduct, 'dist_middle2_loanProduct')
 dist_last2_loanProduct = ['dist_last2', 'loanProduct']
 df = create_group_fea(df, dist_last2_loanProduct, 'dist_last2_loanProduct')
 
+
+dist_first2_basicLevel = ['dist_first2', 'basicLevel']
+df = create_group_fea(df, dist_first2_basicLevel, 'dist_first2_basicLevel')
+dist_middle2_basicLevel = ['dist_middle2', 'basicLevel']
+df = create_group_fea(df, dist_middle2_basicLevel, 'dist_middle2_basicLevel')
+dist_last2_basicLevel = ['dist_last2', 'basicLevel']
+df = create_group_fea(df, dist_last2_basicLevel, 'dist_last2_basicLevel')
+
 # residentAddr
 df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
 df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
@@ -142,6 +150,13 @@ residentAddr_middle2_loanProduct = ['residentAddr_middle2', 'loanProduct']
 df = create_group_fea(df, residentAddr_middle2_loanProduct, 'residentAddr_middle2_loanProduct')
 residentAddr_last2_loanProduct = ['residentAddr_last2', 'loanProduct']
 df = create_group_fea(df, residentAddr_last2_loanProduct, 'residentAddr_last2_loanProduct')
+
+residentAddr_first2_basicLevel = ['residentAddr_first2', 'basicLevel']
+df = create_group_fea(df, residentAddr_first2_basicLevel, 'residentAddr_first2_basicLevel')
+residentAddr_middle2_basicLevel = ['residentAddr_middle2', 'basicLevel']
+df = create_group_fea(df, residentAddr_middle2_basicLevel, 'residentAddr_middle2_basicLevel')
+residentAddr_last2_basicLevel = ['residentAddr_last2', 'basicLevel']
+df = create_group_fea(df, residentAddr_last2_basicLevel, 'residentAddr_last2_basicLevel')
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
@@ -181,11 +196,16 @@ for fea in tqdm(['certId_first2_loanProduct', 'certId_first2_basicLevel']):
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
 for fea in tqdm(['dist_first2', 'dist_middle2', 'dist_last2']):
-    grouped_df = df.groupby(fea).agg({'lmt': ['mean']})
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
+for fea in tqdm(['residentAddr_first2', 'residentAddr_middle2', 'residentAddr_last2']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    df = pd.merge(df, grouped_df, on=fea, how='left')
 
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)
