@@ -142,13 +142,13 @@ df = create_group_fea(df, certId_middle2_loanProduct, 'certId_middle2_loanProduc
 certId_last2_loanProduct = ['certId_last2', 'loanProduct']
 df = create_group_fea(df, certId_last2_loanProduct, 'certId_last2_loanProduct')
 
-df['lmt_bin'] = pd.qcut(df['certValidBegin'], 20, labels=[i for i in range(20)])
-certId_first2_lmt = ['certId_first2', 'lmt_bin']
-df = create_group_fea(df, certId_first2_lmt, 'certId_first2_lmt')
-certId_middle2_lmt = ['certId_middle2', 'lmt_bin']
-df = create_group_fea(df, certId_middle2_lmt, 'certId_middle2_lmt')
-certId_last2_lmt = ['certId_last2', 'lmt_bin']
-df = create_group_fea(df, certId_last2_lmt, 'certId_last2_lmt')
+df['certValidBegin_bin'] = pd.qcut(df['certValidBegin'], 20, labels=[i for i in range(20)])
+certId_first2_cvb = ['certId_first2', 'certValidBegin_bin']
+df = create_group_fea(df, certId_first2_cvb, 'certId_first2_cvb')
+certId_middle2_cvb = ['certId_middle2', 'certValidBegin_bin']
+df = create_group_fea(df, certId_middle2_cvb, 'certId_middle2_cvb')
+certId_last2_cvb = ['certId_last2', 'certValidBegin_bin']
+df = create_group_fea(df, certId_last2_cvb, 'certId_last2_cvb')
 
 certId_first2_basicLevel = ['certId_first2', 'basicLevel']
 df = create_group_fea(df, certId_first2_basicLevel, 'certId_first2_basicLevel')
@@ -157,17 +157,17 @@ df = create_group_fea(df, certId_middle2_basicLevel, 'certId_middle2_basicLevel'
 certId_last2_basicLevel = ['certId_last2', 'basicLevel']
 df = create_group_fea(df, certId_last2_basicLevel, 'certId_last2_basicLevel')
 
+certId_first2_edu = ['certId_first2', 'edu']
+df = create_group_fea(df, certId_first2_edu, 'certId_first2_edu')
+certId_middle2_edu = ['certId_middle2', 'edu']
+df = create_group_fea(df, certId_middle2_edu, 'certId_middle2_edu')
+certId_last2_edu = ['certId_last2', 'edu']
+df = create_group_fea(df, certId_last2_edu, 'certId_last2_edu')
+
 # dist
 df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
 df['dist_middle2'] = df['dist'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
 df['dist_last2'] = df['dist'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
-
-dist_first2_lmt = ['dist_first2', 'lmt_bin']
-df = create_group_fea(df, dist_first2_lmt, 'dist_first2_lmt')
-dist_middle2_lmt = ['dist_middle2', 'lmt_bin']
-df = create_group_fea(df, dist_middle2_lmt, 'dist_middle2_lmt')
-dist_last2_lmt = ['dist_last2', 'lmt_bin']
-df = create_group_fea(df, dist_last2_lmt, 'dist_last2_lmt')
 
 dist_first2_loanProduct = ['dist_first2', 'loanProduct']
 df = create_group_fea(df, dist_first2_loanProduct, 'dist_first2_loanProduct')
@@ -183,17 +183,17 @@ df = create_group_fea(df, dist_middle2_basicLevel, 'dist_middle2_basicLevel')
 dist_last2_basicLevel = ['dist_last2', 'basicLevel']
 df = create_group_fea(df, dist_last2_basicLevel, 'dist_last2_basicLevel')
 
+dist_first2_edu = ['dist_first2', 'edu']
+df = create_group_fea(df, dist_first2_edu, 'dist_first2_edu')
+dist_middle2_edu = ['dist_middle2', 'edu']
+df = create_group_fea(df, dist_middle2_edu, 'dist_middle2_edu')
+dist_last2_edu = ['dist_last2', 'edu']
+df = create_group_fea(df, dist_last2_edu, 'dist_last2_edu')
+
 # residentAddr
 df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
 df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
 df['residentAddr_last2'] = df['residentAddr'].apply(lambda x: int(str(x)[4:6]) if x != -999 else -999)  # 最后两位
-
-residentAddr_first2_lmt = ['residentAddr_first2', 'lmt_bin']
-df = create_group_fea(df, residentAddr_first2_lmt, 'residentAddr_first2_lmt')
-residentAddr_middle2_lmt = ['residentAddr_middle2', 'lmt_bin']
-df = create_group_fea(df, residentAddr_middle2_lmt, 'residentAddr_middle2_lmt')
-residentAddr_last2_lmt = ['residentAddr_last2', 'lmt_bin']
-df = create_group_fea(df, residentAddr_last2_lmt, 'residentAddr_last2_lmt')
 
 residentAddr_first2_loanProduct = ['residentAddr_first2', 'loanProduct']
 df = create_group_fea(df, residentAddr_first2_loanProduct, 'residentAddr_first2_loanProduct')
@@ -208,6 +208,14 @@ residentAddr_middle2_basicLevel = ['residentAddr_middle2', 'basicLevel']
 df = create_group_fea(df, residentAddr_middle2_basicLevel, 'residentAddr_middle2_basicLevel')
 residentAddr_last2_basicLevel = ['residentAddr_last2', 'basicLevel']
 df = create_group_fea(df, residentAddr_last2_basicLevel, 'residentAddr_last2_basicLevel')
+
+
+residentAddr_first2_edu = ['residentAddr_first2', 'edu']
+df = create_group_fea(df, residentAddr_first2_edu, 'residentAddr_first2_edu')
+residentAddr_middle2_edu = ['residentAddr_middle2', 'edu']
+df = create_group_fea(df, residentAddr_middle2_edu, 'residentAddr_middle2_edu')
+residentAddr_last2_edu = ['residentAddr_last2', 'edu']
+df = create_group_fea(df, residentAddr_last2_edu, 'residentAddr_last2_edu')
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
