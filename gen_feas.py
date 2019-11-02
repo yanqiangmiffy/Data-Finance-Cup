@@ -164,12 +164,12 @@ df = create_group_fea(df, certId_middle2_edu, 'certId_middle2_edu')
 certId_last2_edu = ['certId_last2', 'edu']
 df = create_group_fea(df, certId_last2_edu, 'certId_last2_edu')
 
-certId_first2_job = ['certId_first2', 'job']
-df = create_group_fea(df, certId_first2_job, 'certId_first2_job')
-certId_middle2_job = ['certId_middle2', 'job']
-df = create_group_fea(df, certId_middle2_job, 'certId_middle2_job')
-certId_last2_job = ['certId_last2', 'job']
-df = create_group_fea(df, certId_last2_job, 'certId_last2_job')
+# certId_first2_job = ['certId_first2', 'job']
+# df = create_group_fea(df, certId_first2_job, 'certId_first2_job')
+# certId_middle2_job = ['certId_middle2', 'job']
+# df = create_group_fea(df, certId_middle2_job, 'certId_middle2_job')
+# certId_last2_job = ['certId_last2', 'job']
+# df = create_group_fea(df, certId_last2_job, 'certId_last2_job')
 
 certId_first2_x33 = ['certId_first2', 'x_33']
 df = create_group_fea(df, certId_first2_x33, 'certId_first2_x33')

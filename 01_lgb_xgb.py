@@ -66,8 +66,8 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
                                          y[train_in], y[test_in]
 
     # 数据结构
-    lgb_train = lgb.Dataset(X_train, y_train,params={'verbose': -1})
-    lgb_eval = lgb.Dataset(X_valid, y_valid, params={'verbose': -1},reference=lgb_train)
+    lgb_train = lgb.Dataset(X_train, y_train, params={'verbose': -1})
+    lgb_eval = lgb.Dataset(X_valid, y_valid, params={'verbose': -1}, reference=lgb_train)
 
     # 设置参数
     params = {
