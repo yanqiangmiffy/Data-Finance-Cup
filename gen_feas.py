@@ -3,6 +3,44 @@ from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 from numpy import random
 
+
+def simple_statics():
+    print("生成excel数据")
+    train['train'] = 'train'
+    test['train'] = 'test'
+    # df = pd.concat([train, test], sort=False, axis=0)
+    # df.to_excel('df.xlsx', index=None)
+    stats = []
+    for col in df.columns:
+        stats.append((col, df[col].nunique(), df[col].isnull().sum() * 100 / df.shape[0],
+                      df[col].value_counts(normalize=True, dropna=False).values[0] * 100, df[col].dtype))
+
+    stats_df = pd.DataFrame(stats, columns=['Feature', 'Unique_values', 'Percentage of missing values',
+                                            'Percentage of values in the biggest category', 'type'])
+    stats_df.sort_values('Unique_values', ascending=False, inplace=True)
+    stats_df.to_excel('tmp/stats_df.xlsx', index=None)
+
+    stats = []
+    for col in train.columns:
+        stats.append((col, train[col].nunique(), train[col].isnull().sum() * 100 / train.shape[0],
+                      train[col].value_counts(normalize=True, dropna=False).values[0] * 100, train[col].dtype))
+
+    stats_df = pd.DataFrame(stats, columns=['Feature', 'Unique_values', 'Percentage of missing values',
+                                            'Percentage of values in the biggest category', 'type'])
+    stats_df.sort_values('Unique_values', ascending=False, inplace=True)
+    stats_df.to_excel('tmp/stats_train.xlsx', index=None)
+
+    stats = []
+    for col in test.columns:
+        stats.append((col, test[col].nunique(), test[col].isnull().sum() * 100 / test.shape[0],
+                      test[col].value_counts(normalize=True, dropna=False).values[0] * 100, test[col].dtype))
+
+    stats_df = pd.DataFrame(stats, columns=['Feature', 'Unique_values', 'Percentage of missing values',
+                                            'Percentage of values in the biggest category', 'type'])
+    stats_df.sort_values('Unique_values', ascending=False, inplace=True)
+    stats_df.to_excel('tmp/stats_test.xlsx', index=None)
+
+
 random.seed(2019)
 train = pd.read_csv("new_data/train.csv")
 train_target = pd.read_csv('new_data/train_target.csv')
@@ -36,9 +74,9 @@ for c in ['new_ind' + str(-1)]:
     d = df[c].value_counts().to_dict()
     df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
 df.drop(columns=['new_ind' + str(-1)], inplace=True)
-
 df = df.drop(columns=duplicated_features)
 print(df.shape)
+simple_statics()
 
 no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist', 'new_ind1', 'new_ind2']
 features = []
@@ -96,7 +134,7 @@ df['certId_first2'] = df['certId'].apply(lambda x: int(str(x)[:2]))  # 前两位
 df['certId_middle2'] = df['certId'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
 df['certId_last2'] = df['certId'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
 
-# 组合特征
+# certId 贷款
 certId_first2_loanProduct = ['certId_first2', 'loanProduct']
 df = create_group_fea(df, certId_first2_loanProduct, 'certId_first2_loanProduct')
 certId_middle2_loanProduct = ['certId_middle2', 'loanProduct']
@@ -124,13 +162,19 @@ df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
 df['dist_middle2'] = df['dist'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
 df['dist_last2'] = df['dist'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
 
+dist_first2_lmt = ['dist_first2', 'lmt_bin']
+df = create_group_fea(df, dist_first2_lmt, 'dist_first2_lmt')
+dist_middle2_lmt = ['dist_middle2', 'lmt_bin']
+df = create_group_fea(df, dist_middle2_lmt, 'dist_middle2_lmt')
+dist_last2_lmt = ['dist_last2', 'lmt_bin']
+df = create_group_fea(df, dist_last2_lmt, 'dist_last2_lmt')
+
 dist_first2_loanProduct = ['dist_first2', 'loanProduct']
 df = create_group_fea(df, dist_first2_loanProduct, 'dist_first2_loanProduct')
 dist_middle2_loanProduct = ['dist_middle2', 'loanProduct']
 df = create_group_fea(df, dist_middle2_loanProduct, 'dist_middle2_loanProduct')
 dist_last2_loanProduct = ['dist_last2', 'loanProduct']
 df = create_group_fea(df, dist_last2_loanProduct, 'dist_last2_loanProduct')
-
 
 dist_first2_basicLevel = ['dist_first2', 'basicLevel']
 df = create_group_fea(df, dist_first2_basicLevel, 'dist_first2_basicLevel')
@@ -143,6 +187,13 @@ df = create_group_fea(df, dist_last2_basicLevel, 'dist_last2_basicLevel')
 df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
 df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
 df['residentAddr_last2'] = df['residentAddr'].apply(lambda x: int(str(x)[4:6]) if x != -999 else -999)  # 最后两位
+
+residentAddr_first2_lmt = ['residentAddr_first2', 'lmt_bin']
+df = create_group_fea(df, residentAddr_first2_lmt, 'residentAddr_first2_lmt')
+residentAddr_middle2_lmt = ['residentAddr_middle2', 'lmt_bin']
+df = create_group_fea(df, residentAddr_middle2_lmt, 'residentAddr_middle2_lmt')
+residentAddr_last2_lmt = ['residentAddr_last2', 'lmt_bin']
+df = create_group_fea(df, residentAddr_last2_lmt, 'residentAddr_last2_lmt')
 
 residentAddr_first2_loanProduct = ['residentAddr_first2', 'loanProduct']
 df = create_group_fea(df, residentAddr_first2_loanProduct, 'residentAddr_first2_loanProduct')
