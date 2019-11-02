@@ -50,7 +50,7 @@ test = pd.read_csv("new_data/test.csv")
 df = pd.concat([train, test], sort=False, axis=0)
 # 特征工程
 df['missing'] = (df == -1).sum(axis=1).astype(float)  # 统计每行中为-999的个数
-df['bankCard'] = df['bankCard'].fillna(value=0)  # bankCard存在空值
+df['bankCard'] = df['bankCard'].fillna(value=-999)  # bankCard存在空值
 # 删除重复列
 duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                        'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
@@ -171,12 +171,6 @@ df = create_group_fea(df, certId_last2_edu, 'certId_last2_edu')
 # certId_last2_job = ['certId_last2', 'job']
 # df = create_group_fea(df, certId_last2_job, 'certId_last2_job')
 
-certId_first2_x33 = ['certId_first2', 'x_33']
-df = create_group_fea(df, certId_first2_x33, 'certId_first2_x33')
-certId_middle2_x33 = ['certId_middle2', 'x_33']
-df = create_group_fea(df, certId_middle2_x33, 'certId_middle2_x33')
-certId_last2_x33 = ['certId_last2', 'x_33']
-df = create_group_fea(df, certId_last2_x33, 'certId_last2_x33')
 
 # dist
 df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
@@ -204,13 +198,6 @@ df = create_group_fea(df, dist_middle2_edu, 'dist_middle2_edu')
 dist_last2_edu = ['dist_last2', 'edu']
 df = create_group_fea(df, dist_last2_edu, 'dist_last2_edu')
 
-dist_first2_job = ['dist_first2', 'job']
-df = create_group_fea(df, dist_first2_job, 'dist_first2_job')
-dist_middle2_job = ['dist_middle2', 'job']
-df = create_group_fea(df, dist_middle2_job, 'dist_middle2_job')
-dist_last2_job = ['dist_last2', 'job']
-df = create_group_fea(df, dist_last2_job, 'dist_last2_job')
-
 # residentAddr
 df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
 df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
@@ -237,12 +224,32 @@ df = create_group_fea(df, residentAddr_middle2_edu, 'residentAddr_middle2_edu')
 residentAddr_last2_edu = ['residentAddr_last2', 'edu']
 df = create_group_fea(df, residentAddr_last2_edu, 'residentAddr_last2_edu')
 
-residentAddr_first2_job = ['residentAddr_first2', 'job']
-df = create_group_fea(df, residentAddr_first2_job, 'residentAddr_first2_job')
-residentAddr_middle2_job = ['residentAddr_middle2', 'job']
-df = create_group_fea(df, residentAddr_middle2_job, 'residentAddr_middle2_job')
-residentAddr_last2_job = ['residentAddr_last2', 'job']
-df = create_group_fea(df, residentAddr_last2_job, 'residentAddr_last2_job')
+# bankCard
+df['bankCard'] = df['bankCard'].astype(int)
+df['bankCard_first3'] = df['bankCard'].apply(lambda x: int(str(x)[:3].strip()) if x != -999 else -999)
+df['bankCard_middle3'] = df['bankCard'].apply(lambda x: int(str(x)[3:6].strip()) if x != -999 else -999)
+df['bankCard_last3'] = df['bankCard'].apply(lambda x: int(str(x)[6:].strip()) if x != -999 else -999)
+
+bankCard_first3_loanProduct = ['bankCard_first3', 'loanProduct']
+df = create_group_fea(df, bankCard_first3_loanProduct, 'bankCard_first3_loanProduct')
+bankCard_middle3_loanProduct = ['bankCard_middle3', 'loanProduct']
+df = create_group_fea(df, bankCard_middle3_loanProduct, 'bankCard_middle3_loanProduct')
+bankCard_last3_loanProduct = ['bankCard_last3', 'loanProduct']
+df = create_group_fea(df, bankCard_last3_loanProduct, 'bankCard_last3_loanProduct')
+
+bankCard_first3_basicLevel = ['bankCard_first3', 'basicLevel']
+df = create_group_fea(df, bankCard_first3_basicLevel, 'bankCard_first3_basicLevel')
+bankCard_middle3_basicLevel = ['bankCard_middle3', 'basicLevel']
+df = create_group_fea(df, bankCard_middle3_basicLevel, 'bankCard_middle3_basicLevel')
+bankCard_last3_basicLevel = ['bankCard_last3', 'basicLevel']
+df = create_group_fea(df, bankCard_last3_basicLevel, 'bankCard_last3_basicLevel')
+
+bankCard_first3_edu = ['residentAddr_first2', 'edu']
+df = create_group_fea(df, bankCard_first3_edu, 'bankCard_first3_edu')
+bankCard_middle3_edu = ['bankCard_middle3', 'edu']
+df = create_group_fea(df, bankCard_middle3_edu, 'bankCard_middle3_edu')
+bankCard_last3_edu = ['bankCard_last3', 'edu']
+df = create_group_fea(df, bankCard_last3_edu, 'bankCard_last3_edu')
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
@@ -288,6 +295,12 @@ for fea in tqdm(['dist_first2', 'dist_middle2', 'dist_last2']):
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
 for fea in tqdm(['residentAddr_first2', 'residentAddr_middle2', 'residentAddr_last2']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    df = pd.merge(df, grouped_df, on=fea, how='left')
+
+for fea in tqdm(['bankCard_first3','bankCard_middle3','bankCard_last3']):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()

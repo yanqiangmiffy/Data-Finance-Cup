@@ -137,7 +137,7 @@ print("over:*********************************")
 # 10.5折交叉验证结果均值融合，保存文件
 mean_auc = np.mean(auc_cv)
 print("mean auc:", mean_auc)
-filepath = 'result/miffy_' + str(mean_auc) + '.csv'  # 线下平均分数
+filepath = 'result/' + str(mean_auc) + '.csv'  # 线下平均分数
 
 # 转为array
 res = np.array(pred_cv)
