@@ -77,7 +77,7 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
         'max_depth': 6,
         'min_child_weight': 6,
         'num_leaves': 77,
-        'learning_rate': 0.06316799058921277,  # 0.05
+        'learning_rate': 0.02,  # 0.05
         'feature_fraction': 0.6149300064047037,
         'bagging_fraction': 0.8625828020843981,
         'bagging_freq': 5,
@@ -150,4 +150,4 @@ result = DataFrame()
 result['id'] = test['id']
 result['target'] = r
 result.to_csv(filepath, index=False, sep=",")
-result.to_csv('result/result.csv', index=False, sep=",")
+result.to_csv('result/result.csv', index=False, sep=",",float_format='%.6f')

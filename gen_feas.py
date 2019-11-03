@@ -49,7 +49,6 @@ test = pd.read_csv("new_data/test.csv")
 
 df = pd.concat([train, test], sort=False, axis=0)
 # 特征工程
-df['missing'] = (df == -999).sum(axis=1).astype(float)  # 统计每行中为-999的个数
 df['bankCard'] = df['bankCard'].fillna(value=999999999)  # bankCard存在空值
 # 删除重复列
 duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
