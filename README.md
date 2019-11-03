@@ -81,3 +81,8 @@ https://zhidao.baidu.com/question/587237661.html
 2. 当target为1的时候，bankCard没有9开头的银行号，另外也有些其他4开头的没有
 3. 当target为1的时候，certValBegin的在两个值的范围，具体可见gen_feas
 4. 当bankCard为空的时候，有151个样本标签为1，为-999的时候有5w+的样本为0，所以不建议将空值填充为-999
+
+
+## 参数优化
+
+Best trial: score 0.007185995637426377, params {'num_leaves': 110, 'lambda_l1': 0.0741413451633101, 'lambda_l2': 3.841713049478602e-05, 'max_depth': 7, 'bagging_fraction': 0.8427487707638106, 'feature_fraction': 0.5234828847344044}

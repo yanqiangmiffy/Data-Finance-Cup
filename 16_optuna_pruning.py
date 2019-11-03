@@ -32,11 +32,11 @@ def fit_lgbm_with_pruning(trial, train, val, devices=(-1,), seed=None, cat_featu
     """Train Light GBM model"""
     X_train, y_train = train
     X_valid, y_valid = val
-    metric = 'l2'
+    metric = 'binary_logloss'
     params = {
         'num_leaves': trial.suggest_int('num_leaves', 2, 256),
         'objective': 'binary',
-        'learning_rate': trial.suggest_loguniform('lambda_l1', 0.01, 0.5),
+        'learning_rate': trial.suggest_loguniform('learning_rate', 0.01, 0.5),
         "boosting": "gbdt",
         'lambda_l1': trial.suggest_loguniform('lambda_l1', 1e-8, 10.0),
         'lambda_l2': trial.suggest_loguniform('lambda_l2', 1e-8, 10.0),
@@ -67,7 +67,7 @@ def fit_lgbm_with_pruning(trial, train, val, devices=(-1,), seed=None, cat_featu
     watchlist = [d_train, d_valid]
 
     # Add a callback for pruning.
-    pruning_callback = optuna.integration.LightGBMPruningCallback(trial, 'l2', valid_name='valid_1')
+    pruning_callback = optuna.integration.LightGBMPruningCallback(trial, 'binary_logloss', valid_name='valid_1')
     print('training LGB:')
     model = lgb.train(params,
                       train_set=d_train,
@@ -81,8 +81,8 @@ def fit_lgbm_with_pruning(trial, train, val, devices=(-1,), seed=None, cat_featu
     y_pred_valid = model.predict(X_valid, num_iteration=model.best_iteration)
 
     print('best_score', model.best_score)
-    log = {'train/l2': model.best_score['training']['l2'],
-           'valid/l2': model.best_score['valid_1']['l2']}
+    log = {'train/binary_logloss': model.best_score['training']['binary_logloss'],
+           'valid/binary_logloss': model.best_score['valid_1']['binary_logloss']}
     return model, y_pred_valid, log
 
 
@@ -110,7 +110,7 @@ def objective_with_prune(trial: Trial, fast_check=True):
         y_valid_pred_total[valid_idx] = y_pred_valid
         models0.append(model)
         gc.collect()
-        valid_score += log["valid/l2"]
+        valid_score += log["valid/binary_logloss"]
         if fast_check:
             break
     valid_score /= len(models0)
@@ -156,18 +156,19 @@ def fit_lgbm(trial, train, val, devices=(-1,), seed=None, cat_features=None, num
     """Train Light GBM model"""
     X_train, y_train = train
     X_valid, y_valid = val
-    metric = 'l2'
+    metric = 'binary_logloss'
     params = {
         'num_leaves': trial.suggest_int('num_leaves', 2, 256),
-        'objective': 'regression',
-        #               'max_depth': -1,
-        'learning_rate': 0.1,
+        'objective': 'binary',
+        'learning_rate': trial.suggest_loguniform('learning_rate', 0.01, 0.5),
         "boosting": "gbdt",
         'lambda_l1': trial.suggest_loguniform('lambda_l1', 1e-8, 10.0),
         'lambda_l2': trial.suggest_loguniform('lambda_l2', 1e-8, 10.0),
-        "bagging_freq": 5,
+        "bagging_freq": trial.suggest_int('max_depth', 2, 10),
         "bagging_fraction": trial.suggest_uniform('bagging_fraction', 0.1, 1.0),
         "feature_fraction": trial.suggest_uniform('feature_fraction', 0.4, 1.0),
+        'max_depth': trial.suggest_int('max_depth', 2, 10),
+        'min_child_weight': trial.suggest_int('max_depth', 2, 10),
         "metric": metric,
         "verbosity": -1,
     }
@@ -201,8 +202,8 @@ def fit_lgbm(trial, train, val, devices=(-1,), seed=None, cat_features=None, num
     y_pred_valid = model.predict(X_valid, num_iteration=model.best_iteration)
 
     print('best_score', model.best_score)
-    log = {'train/l2': model.best_score['training']['l2'],
-           'valid/l2': model.best_score['valid_1']['l2']}
+    log = {'train/binary_logloss': model.best_score['training']['binary_logloss'],
+           'valid/binary_logloss': model.best_score['valid_1']['binary_logloss']}
     return model, y_pred_valid, log
 
 
@@ -229,7 +230,7 @@ def objective(trial: Trial, fast_check=True, return_info=False):
         y_valid_pred_total[valid_idx] = y_pred_valid
         models.append(model)
         gc.collect()
-        valid_score += log["valid/l2"]
+        valid_score += log["valid/binary_logloss"]
         if fast_check:
             break
     valid_score /= len(models)
@@ -267,6 +268,6 @@ def plot_feature_importance(model,features):
 
 y_test0 = pred(test_data, models0)
 test['target']=y_test0
-test[['id','target']].to_csv('submission.csv', index=False, float_format='%.4f')
+test[['id','target']].to_csv('result/optuna_submission.csv', index=False, float_format='%.4f')
 
 plot_feature_importance(models0[1],features)
