@@ -76,6 +76,7 @@ for c in ['new_ind' + str(-1)]:
 df.drop(columns=['new_ind' + str(-1)], inplace=True)
 df = df.drop(columns=duplicated_features)
 print(df.shape)
+simple_statics()
 
 no_features = ['id', 'target'] + ['bankCard', 'residentAddr', 'certId', 'dist', 'new_ind1', 'new_ind2']
 features = []
@@ -303,33 +304,14 @@ for fea in tqdm(['residentAddr_first2', 'residentAddr_middle2', 'residentAddr_la
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
-for fea in tqdm([
-    'residentAddr_first2_loanProduct', 'residentAddr_middle2_loanProduct', 'residentAddr_last2_loanProduct',
-    'residentAddr_first2_basicLevel', 'residentAddr_middle2_basicLevel', 'residentAddr_last2_basicLevel',
-    'residentAddr_first2_edu', 'residentAddr_middle2_edu', 'residentAddr_last2_edu']):
-    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
-    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
-    grouped_df = grouped_df.reset_index()
-    df = pd.merge(df, grouped_df, on=fea, how='left')
-
 for fea in tqdm(['bankCard_first6', 'bankCard_last3']):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
-for fea in tqdm([
-    'bankCard_first6_loanProduct', 'bankCard_last3_loanProduct',
-    'bankCard_first6_basicLevel', 'bankCard_last3_basicLevel',
-    'bankCard_first6_edu', 'bankCard_last3_edu']):
-    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
-    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
-    grouped_df = grouped_df.reset_index()
-    df = pd.merge(df, grouped_df, on=fea, how='left')
-simple_statics()
-
 # dummies
-df = pd.get_dummies(df, columns=categorical_features)
+# df = pd.get_dummies(df, columns=categorical_features)
 df.head().to_csv('tmp/df.csv', index=None)
 print("df.shape:", df.shape)
 
