@@ -252,6 +252,16 @@ df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 # residentAddr 5288
 # certId 4033
 # dist 3738
+# count特征
+cnt_fols = ['certId_first2', 'certId_middle2', 'certId_last2',
+            'dist_first2','dist_middle2','dist_last2',
+            'residentAddr_first2','residentAddr_middle2','residentAddr_last2',
+            'bankCard_first6','bankCard_last3'
+            ]
+# 计数
+for col in cnt_fols:
+    df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
+
 cols = ['bankCard', 'residentAddr', 'certId', 'dist']
 # 计数
 for col in cols:

@@ -150,3 +150,4 @@ result = DataFrame()
 result['id'] = test['id']
 result['target'] = r
 result.to_csv(filepath, index=False, sep=",")
+result.to_csv('result/result.csv', index=False, sep=",")
