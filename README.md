@@ -85,4 +85,4 @@ https://zhidao.baidu.com/question/587237661.html
 
 ## 参数优化
 
-Best trial: score 0.007185995637426377, params {'num_leaves': 110, 'lambda_l1': 0.0741413451633101, 'lambda_l2': 3.841713049478602e-05, 'max_depth': 7, 'bagging_fraction': 0.8427487707638106, 'feature_fraction': 0.5234828847344044}
+Best trial: score 0.04143260825673333, params {'num_leaves': 77, 'learning_rate': 0.06316799058921277, 'lambda_l1': 4.1025218407955446e-05, 'lambda_l2': 1.1394964623785296e-06, 'bagging_freq': 5, 'bagging_fraction': 0.8625828020843981, 'feature_fraction': 0.6149300064047037, 'max_depth': 6}

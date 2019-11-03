@@ -74,12 +74,12 @@ for k, (train_in, test_in) in enumerate(skf.split(X, y)):
         'boosting_type': 'gbdt',
         'objective': 'binary',
         'metric': {'auc'},
-        'max_depth': 4,
+        'max_depth': 6,
         'min_child_weight': 6,
-        'num_leaves': 16,
-        'learning_rate': 0.02,  # 0.05
-        'feature_fraction': 0.7,
-        'bagging_fraction': 0.7,
+        'num_leaves': 77,
+        'learning_rate': 0.06316799058921277,  # 0.05
+        'feature_fraction': 0.6149300064047037,
+        'bagging_fraction': 0.8625828020843981,
         'bagging_freq': 5,
         'verbose': -1
         # 'lambda_l1':0.25,
