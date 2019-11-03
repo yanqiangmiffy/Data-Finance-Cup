@@ -2,6 +2,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 from numpy import random
+from sklearn.preprocessing import LabelEncoder
 
 
 def simple_statics():
@@ -107,9 +108,10 @@ for index, ind_features in enumerate(group_features):
     for c in ['new_ind' + str(index)]:
         d = df[c].value_counts().to_dict()
         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
-    df.drop(columns=['new_ind' + str(index)], inplace=True)
+    lb = LabelEncoder()
+    df['new_ind' + str(index)] = lb.fit_transform(df['new_ind' + str(index)])
+    # df.drop(columns=['new_ind' + str(index)], inplace=True)
 
-from sklearn.preprocessing import LabelEncoder
 
 
 def create_group_fea(df_, groups_fea, group_name):
@@ -164,12 +166,6 @@ df = create_group_fea(df, certId_middle2_edu, 'certId_middle2_edu')
 certId_last2_edu = ['certId_last2', 'edu']
 df = create_group_fea(df, certId_last2_edu, 'certId_last2_edu')
 
-# certId_first2_job = ['certId_first2', 'job']
-# df = create_group_fea(df, certId_first2_job, 'certId_first2_job')
-# certId_middle2_job = ['certId_middle2', 'job']
-# df = create_group_fea(df, certId_middle2_job, 'certId_middle2_job')
-# certId_last2_job = ['certId_last2', 'job']
-# df = create_group_fea(df, certId_last2_job, 'certId_last2_job')
 
 
 # dist
@@ -310,8 +306,14 @@ for fea in tqdm(['bankCard_first6', 'bankCard_last3']):
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
+
+for fea in tqdm(['new_ind1', 'new_ind2', 'new_ind3', 'new_ind4', 'new_ind5']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    df = pd.merge(df, grouped_df, on=fea, how='left')
 # dummies
-# df = pd.get_dummies(df, columns=categorical_features)
+df = pd.get_dummies(df, columns=categorical_features)
 df.head().to_csv('tmp/df.csv', index=None)
 print("df.shape:", df.shape)
 
