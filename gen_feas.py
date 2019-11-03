@@ -50,7 +50,7 @@ test = pd.read_csv("new_data/test.csv")
 
 df = pd.concat([train, test], sort=False, axis=0)
 # 特征工程
-df['missing'] = (df == -1).sum(axis=1).astype(float)  # 统计每行中为-999的个数
+df['missing'] = (df == -999).sum(axis=1).astype(float)  # 统计每行中为-999的个数
 df['bankCard'] = df['bankCard'].fillna(value=999999999)  # bankCard存在空值
 # 删除重复列
 duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
@@ -84,31 +84,21 @@ features = []
 numerical_features = ['lmt', 'certValidBegin', 'certValidStop', 'missing']  # 不是严格意义的数值特征，可以当做类别特征
 categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
 
-group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
-group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
-group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
 
-group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
-group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
-
-group_features = [
-    group_features1, group_features2, group_features3, group_features4,
-    group_features5,
-]
-
-for index, ind_features in enumerate(group_features):
-    index += 1
-    count = 0
-    for c in ind_features:
-        if count == 0:
-            df['new_ind' + str(index)] = df[c].astype(str) + '_'
-            count += 1
-        else:
-            df['new_ind' + str(index)] += df[c].astype(str) + '_'
-    for c in ['new_ind' + str(index)]:
-        d = df[c].value_counts().to_dict()
-        df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
-    df.drop(columns=['new_ind' + str(index)], inplace=True)
+#
+# for index, ind_features in enumerate(group_features):
+#     index += 1
+#     count = 0
+#     for c in ind_features:
+#         if count == 0:
+#             df['new_ind' + str(index)] = df[c].astype(str) + '_'
+#             count += 1
+#         else:
+#             df['new_ind' + str(index)] += df[c].astype(str) + '_'
+#     for c in ['new_ind' + str(index)]:
+#         d = df[c].value_counts().to_dict()
+#         df['%s_count' % c] = df[c].apply(lambda x: d.get(x, 0))
+#     df.drop(columns=['new_ind' + str(index)], inplace=True)
 
 
 def create_group_fea(df_, groups_fea, group_name):
@@ -127,6 +117,15 @@ def create_group_fea(df_, groups_fea, group_name):
     # df_.drop(columns=[group_name], inplace=True)
     return df_
 
+
+# group_features1 = [c for c in categorical_features if 'x_' in c]  # 匿名
+# group_features2 = ['bankCard', 'residentAddr', 'certId', 'dist']  # 地区特征
+# group_features3 = ['lmt', 'certValidBegin', 'certValidStop']  # 征信1
+
+group_features4 = ['age', 'job', 'ethnic', 'basicLevel', 'linkRela']  # 基本属性
+df = create_group_fea(df, group_features4, 'group_features4')
+group_features5 = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
+df = create_group_fea(df, group_features5, 'group_features5')
 
 # certId
 df['certId_first2'] = df['certId'].apply(lambda x: int(str(x)[:2]))  # 前两位
@@ -163,13 +162,12 @@ df = create_group_fea(df, certId_middle2_edu, 'certId_middle2_edu')
 certId_last2_edu = ['certId_last2', 'edu']
 df = create_group_fea(df, certId_last2_edu, 'certId_last2_edu')
 
-# certId_first2_job = ['certId_first2', 'job']
-# df = create_group_fea(df, certId_first2_job, 'certId_first2_job')
-# certId_middle2_job = ['certId_middle2', 'job']
-# df = create_group_fea(df, certId_middle2_job, 'certId_middle2_job')
-# certId_last2_job = ['certId_last2', 'job']
-# df = create_group_fea(df, certId_last2_job, 'certId_last2_job')
-
+certId_first2_x46 = ['certId_first2', 'x_46']
+df = create_group_fea(df, certId_first2_x46, 'certId_first2_x46')
+certId_middle2_x46 = ['certId_middle2', 'x_46']
+df = create_group_fea(df, certId_middle2_x46, 'certId_middle2_x46')
+certId_last2_x46 = ['certId_last2', 'x_46']
+df = create_group_fea(df, certId_last2_x46, 'certId_last2_x46')
 
 # dist
 df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
@@ -197,6 +195,13 @@ df = create_group_fea(df, dist_middle2_edu, 'dist_middle2_edu')
 dist_last2_edu = ['dist_last2', 'edu']
 df = create_group_fea(df, dist_last2_edu, 'dist_last2_edu')
 
+dist_first2_x46 = ['dist_first2', 'x_46']
+df = create_group_fea(df, dist_first2_x46, 'dist_first2_x46')
+dist_middle2_x46 = ['dist_middle2', 'x_46']
+df = create_group_fea(df, dist_middle2_x46, 'dist_middle2_x46')
+dist_last2_x46 = ['dist_last2', 'x_46']
+df = create_group_fea(df, dist_last2_x46, 'dist_last2_x46')
+
 # residentAddr
 df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
 df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
@@ -223,6 +228,13 @@ df = create_group_fea(df, residentAddr_middle2_edu, 'residentAddr_middle2_edu')
 residentAddr_last2_edu = ['residentAddr_last2', 'edu']
 df = create_group_fea(df, residentAddr_last2_edu, 'residentAddr_last2_edu')
 
+residentAddr_first2_x46 = ['residentAddr_first2', 'x_46']
+df = create_group_fea(df, residentAddr_first2_x46, 'residentAddr_first2_x46')
+residentAddr_middle2_x46 = ['residentAddr_middle2', 'x_46']
+df = create_group_fea(df, residentAddr_middle2_x46, 'residentAddr_middle2_x46')
+residentAddr_last2_x46 = ['residentAddr_last2', 'x_46']
+df = create_group_fea(df, residentAddr_last2_x46, 'residentAddr_last2_x46')
+
 # bankCard
 df['bankCard'] = df['bankCard'].astype(int)
 df['bankCard_first6'] = df['bankCard'].apply(lambda x: int(str(x)[:6]) if x != -999 else -999)
@@ -243,6 +255,11 @@ df = create_group_fea(df, bankCard_first6_edu, 'bankCard_first6_edu')
 bankCard_last3_edu = ['bankCard_last3', 'edu']
 df = create_group_fea(df, bankCard_last3_edu, 'bankCard_last3_edu')
 
+bankCard_first6_x46 = ['bankCard_first6', 'x_46']
+df = create_group_fea(df, bankCard_first6_x46, 'residentAddr_first2_x46')
+bankCard_last3_x46 = ['bankCard_last3', 'x_46']
+df = create_group_fea(df, bankCard_last3_x46, 'bankCard_last3_x46')
+
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 # 类别特征处理
@@ -252,16 +269,6 @@ df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 # residentAddr 5288
 # certId 4033
 # dist 3738
-# count特征
-cnt_fols = ['certId_first2', 'certId_middle2', 'certId_last2',
-            'dist_first2','dist_middle2','dist_last2',
-            'residentAddr_first2','residentAddr_middle2','residentAddr_last2',
-            'bankCard_first6','bankCard_last3'
-            ]
-# 计数
-for col in cnt_fols:
-    df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
-
 cols = ['bankCard', 'residentAddr', 'certId', 'dist']
 # 计数
 for col in cols:
@@ -313,7 +320,7 @@ for fea in tqdm(['residentAddr_first2', 'residentAddr_middle2', 'residentAddr_la
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
-for fea in tqdm(['bankCard_first6', 'bankCard_last3']):
+for fea in tqdm(['bankCard_first6', 'bankCard_last3', 'x_46','group_features4','group_features5']):
     grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
     grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
     grouped_df = grouped_df.reset_index()
