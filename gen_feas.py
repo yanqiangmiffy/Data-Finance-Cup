@@ -243,6 +243,16 @@ df = create_group_fea(df, bankCard_first6_edu, 'bankCard_first6_edu')
 bankCard_last3_edu = ['bankCard_last3', 'edu']
 df = create_group_fea(df, bankCard_last3_edu, 'bankCard_last3_edu')
 
+# loanProduct
+edu_loanProduct = ['edu', 'loanProduct']
+df = create_group_fea(df, edu_loanProduct, 'edu_loanProduct')
+ethnic_loanProduct = ['ethnic', 'loanProduct']
+df = create_group_fea(df, ethnic_loanProduct, 'ethnic_loanProduct')
+age_loanProduct = ['age', 'loanProduct']
+df = create_group_fea(df, age_loanProduct, 'age_loanProduct')
+x46_loanProduct = ['x_46', 'loanProduct']
+df = create_group_fea(df, x46_loanProduct, 'x46_loanProduct')
+
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 # 类别特征处理
@@ -309,6 +319,11 @@ for fea in tqdm(['bankCard_first6', 'bankCard_last3']):
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
+for fea in tqdm(['edu_loanProduct', 'ethnic_loanProduct','age_loanProduct','x46_loanProduct']):
+    grouped_df = df.groupby(fea).agg({'lmt': ['mean', 'median']})
+    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
+    grouped_df = grouped_df.reset_index()
+    df = pd.merge(df, grouped_df, on=fea, how='left')
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)
 df.head().to_csv('tmp/df.csv', index=None)
