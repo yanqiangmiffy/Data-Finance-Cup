@@ -183,8 +183,8 @@ x_combination3 = ['x_' + str(i) for i in range(46, 79)]
 df = create_group_fea(df, x_combination3, 'x_combination3')
 print(df['x_combination3'].value_counts())  # 335
 
-unpayloan__combination = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
-df = create_group_fea(df, unpayloan__combination, 'unpayloan__combination')
+unpayloan_combination = ['ncloseCreditCard', 'unpayIndvLoan', 'unpayOtherLoan', 'unpayNormalLoan', '5yearBadloan']
+df = create_group_fea(df, unpayloan_combination, 'unpayloan_combination')
 print(df['unpayloan__combination'].value_counts())  # 335
 # ========================== 删除重复列 =========================
 duplicated_features = ['x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
