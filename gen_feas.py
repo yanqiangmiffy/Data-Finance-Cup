@@ -243,50 +243,6 @@ df = create_group_fea(df, bankCard_first6_edu, 'bankCard_first6_edu')
 bankCard_last3_edu = ['bankCard_last3', 'edu']
 df = create_group_fea(df, bankCard_last3_edu, 'bankCard_last3_edu')
 
-
-df['bankCard_first3'] = df['bankCard'].apply(lambda x: int(str(x)[:3]) if x != -999 else -999)
-df['bankCard_middle3'] = df['bankCard'].apply(lambda x: int(str(x)[3:6]) if x != -999 else -999)
-df['bankCard_last3'] = df['bankCard'].apply(lambda x: int(str(x)[6:]) if x != -999 else -999)
-
-bankCard_first3_loanProduct = ['bankCard_first3', 'loanProduct']
-df = create_group_fea(df, bankCard_first3_loanProduct, 'bankCard_first3_loanProduct')
-bankCard_middle3_loanProduct = ['bankCard_middle3', 'loanProduct']
-df = create_group_fea(df, bankCard_middle3_loanProduct, 'bankCard_middle3_loanProduct')
-bankCard_last3_loanProduct = ['bankCard_last3', 'loanProduct']
-df = create_group_fea(df, bankCard_last3_loanProduct, 'bankCard_last3_loanProduct')
-
-bankCard_first3_basicLevel = ['bankCard_first3', 'basicLevel']
-df = create_group_fea(df, bankCard_first3_basicLevel, 'bankCard_first3_basicLevel')
-bankCard_middle3_basicLevel = ['bankCard_middle3', 'basicLevel']
-df = create_group_fea(df, bankCard_middle3_basicLevel, 'bankCard_middle3_basicLevel')
-bankCard_last3_basicLevel = ['bankCard_last3', 'basicLevel']
-df = create_group_fea(df, bankCard_last3_basicLevel, 'bankCard_last3_basicLevel')
-
-bankCard_first3_edu = ['bankCard_first3', 'edu']
-df = create_group_fea(df, bankCard_first3_edu, 'bankCard_first3_edu')
-bankCard_middle3_edu = ['bankCard_middle3', 'edu']
-df = create_group_fea(df, bankCard_middle3_edu, 'residentAddr_middle2_edu')
-bankCard_last3_edu = ['bankCard_last3', 'edu']
-df = create_group_fea(df, bankCard_last3_edu, 'residentAddr_last2_edu')
-
-user_information_combination1 = ['gender', 'age', 'edu', 'job', 'highestEdu']
-df = create_group_fea(df, user_information_combination1, 'user_information_combination1')
-# print(df['user_information_combination1'].value_counts()) #3k+
-
-user_information_combination2 = ['gender', 'ethnic', 'edu', 'job', 'highestEdu']
-df = create_group_fea(df, user_information_combination2, 'user_information_combination2')
-# print(df['user_information_combination2'].value_counts()) # 1367
-
-user_information_combination3 = ['gender', 'edu', 'job', 'highestEdu']
-df = create_group_fea(df, user_information_combination3, 'user_information_combination3')
-
-df['lmt_bin'] = pd.qcut(df['lmt'], 20, labels=[i for i in range(20)])
-certId_first2_lmt = ['certId_first2', 'lmt_bin']
-df = create_group_fea(df, certId_first2_lmt, 'certId_first2_lmt')
-certId_middle2_lmt = ['certId_middle2', 'lmt_bin']
-df = create_group_fea(df, certId_middle2_lmt, 'certId_middle2_lmt')
-certId_last2_lmt = ['certId_last2', 'lmt_bin']
-df = create_group_fea(df, certId_last2_lmt, 'certId_last2_lmt')
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 # 类别特征处理
@@ -353,11 +309,6 @@ for fea in tqdm(['bankCard_first6', 'bankCard_last3']):
     grouped_df = grouped_df.reset_index()
     df = pd.merge(df, grouped_df, on=fea, how='left')
 
-for fea in tqdm(['bankCard_first3', 'bankCard_middle3', 'bankCard_last3']):
-    grouped_df = df.groupby(fea).agg({'lmt': ['mean']})
-    grouped_df.columns = [fea + '_' + '_'.join(col).strip() for col in grouped_df.columns.values]
-    grouped_df = grouped_df.reset_index()
-    df = pd.merge(df, grouped_df, on=fea, how='left')
 # dummies
 df = pd.get_dummies(df, columns=categorical_features)
 df.head().to_csv('tmp/df.csv', index=None)
