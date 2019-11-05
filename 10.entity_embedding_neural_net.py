@@ -207,78 +207,95 @@ def gini_normalizedc(a, p):
     return ginic(a, p) / ginic(a, a)
 
 
-# network training
-K = 5
-runs_per_fold = 1
-n_epochs = 2
+def train():
+    # network training
+    K = 5
+    runs_per_fold = 1
+    n_epochs = 2
 
-cv_ginis = []
-full_val_preds = np.zeros(np.shape(X_train)[0])
-y_preds = np.zeros((np.shape(X_test)[0], K))
+    cv_ginis = []
+    full_val_preds = np.zeros(np.shape(X_train)[0])
+    y_preds = np.zeros((np.shape(X_test)[0], K))
 
-kfold = StratifiedKFold(n_splits=K,
-                        random_state=231,
-                        shuffle=True)
+    kfold = StratifiedKFold(n_splits=K,
+                            random_state=231,
+                            shuffle=True)
 
-for i, (f_ind, outf_ind) in enumerate(kfold.split(X_train, y_train)):
-    checkpoint = ModelCheckpoint(filepath='models/entity{}.h5'.format(i + 1),
-                                 monitor='val_loss',
-                                 verbose=1, save_best_only=True)
-    X_train_f, X_val_f = X_train.loc[f_ind].copy(), X_train.loc[outf_ind].copy()
-    y_train_f, y_val_f = y_train[f_ind], y_train[outf_ind]
+    for i, (f_ind, outf_ind) in enumerate(kfold.split(X_train, y_train)):
 
-    X_test_f = X_test.copy()
+        X_train_f, X_val_f = X_train.loc[f_ind].copy(), X_train.loc[outf_ind].copy()
+        y_train_f, y_val_f = y_train[f_ind], y_train[outf_ind]
 
-    # upsampling adapted from kernel:
-    # https://www.kaggle.com/ogrellier/xgb-classifier-upsampling-lb-0-283
-    pos = (pd.Series(y_train_f == 1))
-    # Add positive examples
-    X_train_f = pd.concat([X_train_f, X_train_f.loc[pos]], axis=0)
-    y_train_f = pd.concat([y_train_f, y_train_f.loc[pos]], axis=0)
+        X_test_f = X_test.copy()
 
-    # Shuffle data
-    idx = np.arange(len(X_train_f))
-    np.random.shuffle(idx)
-    X_train_f = X_train_f.iloc[idx]
-    y_train_f = y_train_f.iloc[idx]
+        # upsampling adapted from kernel:
+        # https://www.kaggle.com/ogrellier/xgb-classifier-upsampling-lb-0-283
+        pos = (pd.Series(y_train_f == 1))
+        # Add positive examples
+        X_train_f = pd.concat([X_train_f, X_train_f.loc[pos]], axis=0)
+        y_train_f = pd.concat([y_train_f, y_train_f.loc[pos]], axis=0)
 
-    # preprocessing
-    proc_X_train_f, proc_X_val_f, proc_X_test_f = preproc(X_train_f, X_val_f, X_test_f)
+        # Shuffle data
+        idx = np.arange(len(X_train_f))
+        np.random.shuffle(idx)
+        X_train_f = X_train_f.iloc[idx]
+        y_train_f = y_train_f.iloc[idx]
 
-    # track oof prediction for cv scores
-    val_preds = 0
-    auc_callback = roc_auc_callback(training_data=(proc_X_train_f, y_train_f),
-                                    validation_data=(proc_X_val_f, y_val_f))
-    for j in range(runs_per_fold):
-        NN = build_embedding_network()
+        # preprocessing
+        proc_X_train_f, proc_X_val_f, proc_X_test_f = preproc(X_train_f, X_val_f, X_test_f)
 
-        NN.summary()
-        NN.fit(proc_X_train_f,
-               y_train_f.values,
-               epochs=n_epochs,
-               batch_size=128,
-               verbose=1,
-               callbacks=[auc_callback,checkpoint]
-               )
+        # track oof prediction for cv scores
+        val_preds = 0
+        auc_callback = roc_auc_callback(training_data=(proc_X_train_f, y_train_f),
+                                        validation_data=(proc_X_val_f, y_val_f))
+        for j in range(runs_per_fold):
+            NN = build_embedding_network()
 
-        val_preds += NN.predict(proc_X_val_f)[:, 0] / runs_per_fold
-        y_preds[:, i] += NN.predict(proc_X_test_f)[:, 0] / runs_per_fold
+            NN.summary()
+            NN.fit(proc_X_train_f,
+                   y_train_f.values,
+                   epochs=n_epochs,
+                   batch_size=128,
+                   verbose=1,
+                   callbacks=[auc_callback]
+                   )
 
-    full_val_preds[outf_ind] += val_preds
+            val_preds += NN.predict(proc_X_val_f)[:, 0] / runs_per_fold
+            y_preds[:, i] += NN.predict(proc_X_test_f)[:, 0] / runs_per_fold
+            NN.save('models/entity{}.hd5'.format(i+1))
+        full_val_preds[outf_ind] += val_preds
 
-    cv_gini = gini_normalizedc(y_val_f.values, val_preds)
-    cv_ginis.append(cv_gini)
-    print('\nFold %i prediction cv gini: %.5f\n' % (i, cv_gini))
+        cv_gini = gini_normalizedc(y_val_f.values, val_preds)
+        cv_ginis.append(cv_gini)
+        print('\nFold %i prediction cv gini: %.5f\n' % (i, cv_gini))
 
-print('Mean out of fold gini: %.5f' % np.mean(cv_ginis))
-print('Full validation gini: %.5f' % gini_normalizedc(y_train.values, full_val_preds))
+    print('Mean out of fold gini: %.5f' % np.mean(cv_ginis))
+    print('Full validation gini: %.5f' % gini_normalizedc(y_train.values, full_val_preds))
 
-y_pred_final = np.mean(y_preds, axis=1)
-print(len(df_test.id))
-print(len(y_pred_final))
-df_sub = pd.DataFrame({'id': df_test.id,
-                       'target': y_pred_final},
-                      columns=['id', 'target'])
-df_sub.to_csv('result/NN_EntityEmbed_10fold-sub.csv', index=False)
+    y_pred_final = np.mean(y_preds, axis=1)
+    print(len(df_test.id))
+    print(len(y_pred_final))
+    df_sub = pd.DataFrame({'id': df_test.id,
+                           'target': y_pred_final},
+                          columns=['id', 'target'])
+    df_sub.to_csv('result/NN_EntityEmbed_10fold-sub.csv', index=False)
 
-pd.DataFrame(full_val_preds).to_csv('result/NN_EntityEmbed_10fold-val_preds.csv', index=False)
+    pd.DataFrame(full_val_preds).to_csv('result/NN_EntityEmbed_10fold-val_preds.csv', index=False)
+
+def extract_embedding():
+    NN = build_embedding_network()
+    NN.load_weights('models/entity1.hd5')
+    weight = NN.get_weights()
+
+    print(weight)
+    print(type(weight))
+    print(weight[0])
+    print(type(weight[0]))
+    print(weight[0].shape)
+    print(weight[1].shape)
+    print(weight[2].shape)
+    print(weight[3].shape)
+    print(len(weight))
+    # for w in weight:
+    #     print(w)
+extract_embedding()
