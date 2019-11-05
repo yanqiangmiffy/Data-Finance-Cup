@@ -51,12 +51,12 @@ df = pd.concat([train, test], sort=False, axis=0)
 # 特征工程
 df['bankCard'] = df['bankCard'].fillna(value=999999999)  # bankCard存在空值
 # 删除重复列
-duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
+duplicated_features = ['x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                        'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
                        'x_15', 'x_17', 'x_18', 'x_19', 'x_21',
                        'x_23', 'x_24', 'x_36', 'x_37', 'x_38', 'x_57', 'x_58',
                        'x_59', 'x_60', 'x_77', 'x_78'] + \
-                      ['x_22', 'x_40', 'x_70'] + \
+                      ['x_40', 'x_70'] + \
                       ['x_41'] + \
                       ['x_43'] + \
                       ['x_45'] + \

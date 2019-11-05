@@ -82,6 +82,9 @@ https://zhidao.baidu.com/question/587237661.html
 3. 当target为1的时候，certValBegin的在两个值的范围，具体可见gen_feas
 4. 当bankCard为空的时候，有151个样本标签为1，为-999的时候有5w+的样本为0，所以不建议将空值填充为-999
 
+## tricks
+1. 提交结果概率保留小数点6位，结果会上升
+
 
 ## 参数优化
 
