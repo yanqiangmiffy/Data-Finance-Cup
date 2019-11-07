@@ -48,8 +48,36 @@ test = pd.read_csv("new_data/test.csv")
 train['id'] = [i for i in range(len(train))]
 test['target'] = [-1 for i in range(len(test))]
 df = pd.concat([train, test], sort=False)
-df['certPeriod'] = df['certValidStop'] - df['certValidBegin']
-no_fea = ['id', 'target', 'certValidStop', 'certValidBegin']
+df['bankCard'] = df['bankCard'].fillna(value=999999999)  # bankCard存在空值
+
+df['certId_first2'] = df['certId'].apply(lambda x: int(str(x)[:2]))  # 前两位
+df['certId_middle2'] = df['certId'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
+df['certId_last2'] = df['certId'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
+df.drop(columns='certId', inplace=True)
+# dist
+df['dist_first2'] = df['dist'].apply(lambda x: int(str(x)[:2]))  # 前两位
+df['dist_middle2'] = df['dist'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
+df['dist_last2'] = df['dist'].apply(lambda x: int(str(x)[4:6]))  # 最后两位
+df.drop(columns='dist', inplace=True)
+
+# residentAddr
+df['residentAddr_first2'] = df['residentAddr'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)  # 前两位
+df['residentAddr_middle2'] = df['residentAddr'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)  # 中间两位
+df['residentAddr_last2'] = df['residentAddr'].apply(lambda x: int(str(x)[4:6]) if x != -999 else -999)  # 最后两位
+df.drop(columns='residentAddr', inplace=True)
+
+# bankCard
+df['bankCard'] = df['bankCard'].astype(int)
+df['bankCard_first6'] = df['bankCard'].apply(lambda x: int(str(x)[:6]) if x != -999 else -999)
+df['bankCard_last3'] = df['bankCard'].apply(lambda x: int(str(x)[6:].strip()) if x != -999 else -999)
+df.drop(columns='bankCard', inplace=True)
+
+df['certValidBegin_bin'] = pd.qcut(df['certValidBegin'], 20, labels=[i for i in range(20)])
+df['certValidStop_bin'] = pd.qcut(df['certValidStop'], 20, labels=[i for i in range(20)])
+df['lmt_bin'] = pd.qcut(df['lmt'], 20, labels=[i for i in range(20)])
+
+no_fea = ['id', 'target', 'certValidStop', 'certValidBegin', 'lmt']
+
 feas = [fea for fea in df.columns if fea not in no_fea]
 print(len(feas))
 
@@ -61,11 +89,11 @@ def to_text(row):
     return " ".join(text)
 
 
-# df['token_text'] = df.apply(lambda row: to_text(row), axis=1)
+df['token_text'] = df.apply(lambda row: to_text(row), axis=1)
 # df[['id', 'token_text']].to_csv('tmp/df.csv', index=None)
-df = pd.read_csv('tmp/df.csv')
+# df = pd.read_csv('tmp/df.csv')
 texts = df['token_text'].values.tolist()
-# train_w2v(texts)
+train_w2v(texts)
 
 # 构建词汇表
 tokenizer = Tokenizer(filters='|')
@@ -211,7 +239,8 @@ for i, (train_index, valid_index) in enumerate(skf.split(x_train, y_train)):
                                  verbose=1, save_best_only=True)
     history = model.fit(X_train, y_tr,
                         validation_data=(X_valid, y_val),
-                        epochs=3, batch_size=64,
+                        epochs=5,
+                        batch_size=64,
                         callbacks=[checkpoint, roc_auc_callback(training_data=(X_train, y_tr),
                                                                 validation_data=(X_valid, y_val))])
 

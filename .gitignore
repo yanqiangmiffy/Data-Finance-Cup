@@ -32,6 +32,7 @@ MANIFEST
 *.manifest
 *.spec
 data/
+data/w2v.txt
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

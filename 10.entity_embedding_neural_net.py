@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from keras.callbacks import *
 from keras.layers import *
+
 # random seeds for stochastic parts of neural network
 np.random.seed(10)
 from tensorflow import set_random_seed
@@ -87,7 +88,7 @@ df.fillna(value=999999999, inplace=True)  # bankCard存在空值
 # df = df.drop(columns=duplicated_features)
 no_features = ['id', 'target']
 
-numerical_features = ['certValidBegin', 'certValidStop','lmt']
+numerical_features = ['certValidBegin', 'certValidStop', 'lmt']
 # certId
 df['certId_first2'] = df['certId'].apply(lambda x: int(str(x)[:2]))  # 前两位
 df['certId_middle2'] = df['certId'].apply(lambda x: int(str(x)[2:4]))  # 中间两位
@@ -112,7 +113,6 @@ df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
 for feat in numerical_features + ['certValidPeriod']:
     df[feat] = df[feat].rank() / float(df.shape[0])  # 排序，并且进行归一化
 
-
 X_train, y_train = df[:len(train)], df[:len(train)].target
 X_test = df[len(train):]
 
@@ -124,7 +124,7 @@ col_vals_dict = {c: list(X_train[c].unique()) for c in categorical_features}
 print(col_vals_dict)
 embed_cols = []
 for c in col_vals_dict:
-    if len(col_vals_dict[c]) >=2:
+    if len(col_vals_dict[c]) >= 2:
         embed_cols.append(c)
         print(c + ': %d values' % len(col_vals_dict[c]))  # look at value counts to know the embedding dimensions
 print('\n')
@@ -143,21 +143,20 @@ def build_embedding_network():
             output_dim = (len(col_vals_dict[embed_cols[i]]) // 2) + 1
 
         embedding = Embedding(input_dim, output_dim, input_length=1)(cate_input)
-        embedding = SpatialDropout1D(0.3)(embedding)
         embedding = Reshape(target_shape=(output_dim,))(embedding)
         inputs.append(cate_input)
         embeddings.append(embedding)
 
-    # input_numeric = Input(shape=(4,)) # 数值特征
-    # embedding_numeric = Dense(20)(input_numeric)
-    # inputs.append(input_numeric)
-    # embeddings.append(embedding_numeric)
+    input_numeric = Input(shape=(4,))
+    embedding_numeric = Dense(5)(input_numeric)
+    inputs.append(input_numeric)
+    embeddings.append(embedding_numeric)
 
     x = Concatenate()(embeddings)
     x = Dense(300, activation='relu')(x)
     x = Dropout(.35)(x)
-    x = Dense(300, activation='relu')(x)
-    x = Dropout(.3)(x)
+    x = Dense(100, activation='relu')(x)
+    x = Dropout(.15)(x)
     output = Dense(1, activation='sigmoid')(x)
 
     model = Model(inputs, output)
@@ -184,11 +183,11 @@ def preproc(X_train, X_val, X_test):
         input_list_test.append(X_test[c].map(val_map).fillna(0).values)
 
     # the rest of the columns
-    # other_cols = [c for c in X_train.columns if (not c in embed_cols)]
-    # print(other_cols, len(other_cols))
-    # input_list_train.append(X_train[other_cols].values)
-    # input_list_val.append(X_val[other_cols].values)
-    # input_list_test.append(X_test[other_cols].values)
+    other_cols = [c for c in X_train.columns if (not c in embed_cols)]
+    print(other_cols, len(other_cols))
+    input_list_train.append(X_train[other_cols].values)
+    input_list_val.append(X_val[other_cols].values)
+    input_list_test.append(X_test[other_cols].values)
 
     return input_list_train, input_list_val, input_list_test
 
@@ -211,7 +210,7 @@ def train():
     # network training
     K = 5
     runs_per_fold = 1
-    n_epochs = 2
+    n_epochs = 10
 
     cv_ginis = []
     full_val_preds = np.zeros(np.shape(X_train)[0])
@@ -248,26 +247,27 @@ def train():
         val_preds = 0
         auc_callback = roc_auc_callback(training_data=(proc_X_train_f, y_train_f),
                                         validation_data=(proc_X_val_f, y_val_f))
-        for j in range(runs_per_fold):
-            NN = build_embedding_network()
+        NN = build_embedding_network()
 
-            NN.summary()
-            NN.fit(proc_X_train_f,
-                   y_train_f.values,
-                   epochs=n_epochs,
-                   batch_size=128,
-                   verbose=1,
-                   callbacks=[auc_callback]
-                   )
+        NN.summary()
+        NN.fit(proc_X_train_f,
+               y_train_f.values,
+               epochs=n_epochs,
+               batch_size=128,
+               verbose=1,
+               # callbacks=[auc_callback]
+               )
 
-            val_preds += NN.predict(proc_X_val_f)[:, 0] / runs_per_fold
-            y_preds[:, i] += NN.predict(proc_X_test_f)[:, 0] / runs_per_fold
-            NN.save('models/entity{}.hd5'.format(i+1))
+        val_preds += NN.predict(proc_X_val_f)[:, 0] / runs_per_fold
+        y_preds[:, i] += NN.predict(proc_X_test_f)[:, 0] / runs_per_fold
+        NN.save('models/entity{}.hd5'.format(i + 1))
+
         full_val_preds[outf_ind] += val_preds
-
         cv_gini = gini_normalizedc(y_val_f.values, val_preds)
+        cv_auc = roc_auc_score(y_val_f.values, val_preds)
         cv_ginis.append(cv_gini)
         print('\nFold %i prediction cv gini: %.5f\n' % (i, cv_gini))
+        print('\nFold %i prediction cv auc: %.5f\n' % (i, cv_auc))
 
     print('Mean out of fold gini: %.5f' % np.mean(cv_ginis))
     print('Full validation gini: %.5f' % gini_normalizedc(y_train.values, full_val_preds))
@@ -281,6 +281,10 @@ def train():
     df_sub.to_csv('result/NN_EntityEmbed_10fold-sub.csv', index=False)
 
     pd.DataFrame(full_val_preds).to_csv('result/NN_EntityEmbed_10fold-val_preds.csv', index=False)
+
+
+train()
+
 
 def extract_embedding():
     NN = build_embedding_network()
@@ -298,4 +302,4 @@ def extract_embedding():
     print(len(weight))
     # for w in weight:
     #     print(w)
-extract_embedding()
+# extract_embedding()
