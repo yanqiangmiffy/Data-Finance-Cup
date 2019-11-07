@@ -1,7 +1,7 @@
 import pandas as pd
 
 lgb = pd.read_csv('result/0.7087926129573728.csv')
-xgb = pd.read_csv('result/xgb_1103_2.csv')
+xgb = pd.read_csv('result/xgb.csv')
 # cnn = pd.read_csv('result/w3000.6495996632995624_cnn.csv')
 
 res = lgb.copy()
