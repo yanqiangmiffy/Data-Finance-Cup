@@ -49,14 +49,15 @@ test = pd.read_csv("new_data/test.csv")
 
 df = pd.concat([train, test], sort=False, axis=0)
 # 特征工程
+df['missing'] = (df == -1).sum(axis=1).astype(float)  # 统计每行中为-999的个数
 df['bankCard'] = df['bankCard'].fillna(value=999999999)  # bankCard存在空值
 # 删除重复列
-duplicated_features = ['x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
+duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
                        'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
                        'x_15', 'x_17', 'x_18', 'x_19', 'x_21',
                        'x_23', 'x_24', 'x_36', 'x_37', 'x_38', 'x_57', 'x_58',
                        'x_59', 'x_60', 'x_77', 'x_78'] + \
-                      ['x_40', 'x_70'] + \
+                      ['x_22', 'x_40', 'x_70'] + \
                       ['x_41'] + \
                       ['x_43'] + \
                       ['x_45'] + \
@@ -245,6 +246,20 @@ df = create_group_fea(df, bankCard_last3_edu, 'bankCard_last3_edu')
 
 # 数值特征处理
 df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+import numpy as np
+def date_cyc_enc(df, col, max_vals):
+    df[col + '_sin'] = np.sin(2 * np.pi * df[col] / max_vals)
+    df[col + '_cos'] = np.cos(2 * np.pi * df[col] / max_vals)
+    return df
+
+df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+df['certBeginDt'] = pd.to_datetime(df["certValidBegin"] * 1000000000) - pd.offsets.DateOffset(years=70)
+df['certBeginDt'] = df['certBeginDt'].astype('str')
+df['certBeginDt_Month'] = df['certBeginDt'].apply(lambda x: int(x.split('-')[1]))
+df['certBeginDt_Day'] = df['certBeginDt'].apply(lambda x: int(x.split('-')[2]))
+df = date_cyc_enc(df, 'certBeginDt_Month', 12)
+df = date_cyc_enc(df, 'certBeginDt_Day', 31)
+df = df.drop(['certBeginDt'], axis=1)
 # 类别特征处理
 
 # 特殊处理
