@@ -28,7 +28,7 @@ test_data = test[features].values
 print(X.shape)
 
 
-def fit_lgbm_with_pruning(trial, train, val, devices=(-1,), seed=None, cat_features=None, num_rounds=1500):
+def fit_lgbm_with_pruning(trial, train, val, devices=(-1,), seed=1314, cat_features=None, num_rounds=1500):
     """Train Light GBM model"""
     X_train, y_train = train
     X_valid, y_valid = val
@@ -211,7 +211,8 @@ def objective(trial: Trial, fast_check=True, return_info=False):
     folds = 5
     seed = 666
     shuffle = False
-    kf = KFold(n_splits=folds, shuffle=shuffle, random_state=seed)
+    # kf = KFold(n_splits=folds, shuffle=shuffle, random_state=seed)
+    kf = StratifiedKFold(n_splits=folds, shuffle=shuffle, random_state=seed)
 
     X_train, y_train = X, y
     y_valid_pred_total = np.zeros(X_train.shape[0])
@@ -268,6 +269,6 @@ def plot_feature_importance(model,features):
 
 y_test0 = pred(test_data, models0)
 test['target']=y_test0
-test[['id','target']].to_csv('result/optuna_submission.csv', index=False, float_format='%.4f')
+test[['id','target']].to_csv('result/optuna_submission.csv', index=False, float_format='%.7f')
 
 plot_feature_importance(models0[1],features)
