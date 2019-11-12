@@ -3,154 +3,153 @@
 # !pip install seaborn --user
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+def load_xgb_data():
+    train = pd.read_csv("new_data/train.csv")
+    train_target = pd.read_csv('new_data/train_target.csv')
+    train = train.merge(train_target, on='id')
+    test = pd.read_csv("new_data/test.csv")
+    test['target'] = -1
+    df = pd.concat([train, test], sort=False, axis=0)
 
-train = pd.read_csv("new_data/train.csv")
-train_target = pd.read_csv('new_data/train_target.csv')
-train = train.merge(train_target, on='id')
-test = pd.read_csv("new_data/test.csv")
-test['target'] = -1
-df = pd.concat([train, test], sort=False, axis=0)
+    # 删除重复列
+    duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
+                           'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
+                           'x_15', 'x_17', 'x_18', 'x_19', 'x_21',
+                           'x_23', 'x_24', 'x_36', 'x_37', 'x_38', 'x_57', 'x_58',
+                           'x_59', 'x_60', 'x_77', 'x_78'] + \
+                          ['x_22', 'x_40', 'x_70'] + \
+                          ['x_41'] + \
+                          ['x_43'] + \
+                          ['x_45'] + \
+                          ['x_61']
 
-# 删除重复列
-duplicated_features = ['x_0', 'x_1', 'x_2', 'x_3', 'x_4', 'x_5', 'x_6',
-                       'x_7', 'x_8', 'x_9', 'x_10', 'x_11', 'x_13',
-                       'x_15', 'x_17', 'x_18', 'x_19', 'x_21',
-                       'x_23', 'x_24', 'x_36', 'x_37', 'x_38', 'x_57', 'x_58',
-                       'x_59', 'x_60', 'x_77', 'x_78'] + \
-                      ['x_22', 'x_40', 'x_70'] + \
-                      ['x_41'] + \
-                      ['x_43'] + \
-                      ['x_45'] + \
-                      ['x_61']
+    # df = df.drop(columns=duplicated_features)
+    ###############
+    ###############
 
-# df = df.drop(columns=duplicated_features)
-###############
-###############
+    x_feature = []
+    for i in range(79):
+        x_feature.append('x_{}'.format(i))
 
-x_feature = []
-for i in range(79):
-    x_feature.append('x_{}'.format(i))
+    no_features = ['id', 'target', 'isNew']
+    features = []
+    numerical_features = ['lmt', 'certValidBegin', 'certValidStop']
+    categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
 
-no_features = ['id', 'target', 'isNew']
-features = []
-numerical_features = ['lmt', 'certValidBegin', 'certValidStop']
-categorical_features = [fea for fea in df.columns if fea not in numerical_features + no_features]
+    ###########
+    import time
 
-###########
-import time
+    df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
+    df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
+    df['end'] = df['certValidStop'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
+    df['begin'] = df['begin'].apply(lambda x: int(x.split('-')[0]))
+    df['end'] = df['end'].apply(lambda x: int(x.split('-')[0]))
+    df['val_period'] = df['end'] - df['begin']
 
-df['certValidPeriod'] = df['certValidStop'] - df['certValidBegin']
-df['begin'] = df['certValidBegin'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
-df['end'] = df['certValidStop'].apply(lambda x: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(x)))
-df['begin'] = df['begin'].apply(lambda x: int(x.split('-')[0]))
-df['end'] = df['end'].apply(lambda x: int(x.split('-')[0]))
-df['val_period'] = df['end'] - df['begin']
+    ###########
+    # 0.76新加
+    ###########
+    cols = []
 
-###########
-# 0.76新加
-###########
-cols = []
+    df['certId12'] = df['certId'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)
+    df['certId34'] = df['certId'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)
+    df['certId56'] = df['certId'].apply(lambda x: int(str(x)[4:]) if x != -999 else -999)
 
-df['certId12'] = df['certId'].apply(lambda x: int(str(x)[:2]) if x != -999 else -999)
-df['certId34'] = df['certId'].apply(lambda x: int(str(x)[2:4]) if x != -999 else -999)
-df['certId56'] = df['certId'].apply(lambda x: int(str(x)[4:]) if x != -999 else -999)
+    from sklearn.preprocessing import LabelEncoder
 
-from sklearn.preprocessing import LabelEncoder
+    df['certId12_basicLevel'] = df['certId12'].astype(str) + df['basicLevel'].astype(str)
+    df['certId34_basicLevel'] = df['certId34'].astype(str) + df['basicLevel'].astype(str)
+    df['certId56_basicLevel'] = df['certId56'].astype(str) + df['basicLevel'].astype(str)
 
-df['certId12_basicLevel'] = df['certId12'].astype(str) + df['basicLevel'].astype(str)
-df['certId34_basicLevel'] = df['certId34'].astype(str) + df['basicLevel'].astype(str)
-df['certId56_basicLevel'] = df['certId56'].astype(str) + df['basicLevel'].astype(str)
+    df['certId12_loanProduct'] = df['certId12'].astype(str) + df['loanProduct'].astype(str)
+    df['certId34_loanProduct'] = df['certId34'].astype(str) + df['loanProduct'].astype(str)
+    df['certId56_loanProduct'] = df['certId56'].astype(str) + df['loanProduct'].astype(str)
 
-df['certId12_loanProduct'] = df['certId12'].astype(str) + df['loanProduct'].astype(str)
-df['certId34_loanProduct'] = df['certId34'].astype(str) + df['loanProduct'].astype(str)
-df['certId56_loanProduct'] = df['certId56'].astype(str) + df['loanProduct'].astype(str)
+    # cols += ['certId12_loanProduct', 'certId34_loanProduct','certId56_loanProduct']
+    cols += ['certId12_basicLevel', 'certId34_basicLevel', 'certId56_basicLevel',
+             'certId12_loanProduct', 'certId34_loanProduct', 'certId56_loanProduct']
 
-# cols += ['certId12_loanProduct', 'certId34_loanProduct','certId56_loanProduct']
-cols += ['certId12_basicLevel', 'certId34_basicLevel', 'certId56_basicLevel',
-        'certId12_loanProduct', 'certId34_loanProduct','certId56_loanProduct']
+    df['dist56'] = df['dist'].apply(lambda x: int(str(x)[4:]) if x != -999 else -999)
+    df['dist56_basicLevel'] = df['dist56'].astype(str) + df['basicLevel'].astype(str)
+    df['dist56_loanProduct'] = df['dist56'].astype(str) + df['loanProduct'].astype(str)
+    # cols += ['dist56_loanProduct']
+    cols += ['dist56_basicLevel', 'dist56_loanProduct']
 
-df['dist56'] = df['dist'].apply(lambda x: int(str(x)[4:]) if x != -999 else -999)
-df['dist56_basicLevel'] = df['dist56'].astype(str) + df['basicLevel'].astype(str)
-df['dist56_loanProduct'] = df['dist56'].astype(str) + df['loanProduct'].astype(str)
-# cols += ['dist56_loanProduct']
-cols += ['dist56_basicLevel', 'dist56_loanProduct']
-
-# 估计有用
-# df['residentAddr56'] = df['residentAddr'].apply(lambda x: int(str(x)[4:]) if x != -999 else -999)
-# df['residentAddr56_basicLevel'] = df['residentAddr56'].astype(str) + df['basicLevel'].astype(str)
-# df['residentAddr56_loanProduct'] = df['residentAddr56'].astype(str) + df['loanProduct'].astype(str)
-# cols += ['residentAddr56_loanProduct']
-# cols += ['residentAddr56_basicLevel', 'residentAddr56_loanProduct']
-####
-
-
-# df['certId12_lmt'] = df.groupby('certId12')['lmt'].transform('mean')
-# df['certId12_lmt'] = df.groupby('certId12')['lmt'].transform('median')
-
-# df['certId34_lmt'] = df.groupby('certId34')['lmt'].transform('mean')
-# df['certId34_lmt'] = df.groupby('certId34')['lmt'].transform('median')
-
-# df['certId56_lmt'] = df.groupby('certId56')['lmt'].transform('mean')
-# df['certId56_lmt'] = df.groupby('certId56')['lmt'].transform('median')
-
-################
-#things not work
-# df['certId12_edu'] = df['certId12'].astype(str) + df['edu'].astype(str)
-# df['certId34_edu'] = df['certId34'].astype(str) + df['edu'].astype(str)
-# df['certId56_edu'] = df['certId56'].astype(str) + df['edu'].astype(str)
-# 'certId12_edu', 'certId34_edu','certId56_edu'
-
-# useless = ['x_59','x_22','x_23','x_24','x_30','x_31','x_32','x_35','x_36','x_37','x_38','x_39','x_40','x_42',
-#  'x_57','x_58','x_60','x_69','x_70','x_77','x_78','ncloseCreditCard','unpayIndvLoan','unpayOtherLoan',
-#  'unpayNormalLoan','5yearBadloan','x_21','x_19','is_edu_equal','x_9','x_7','x_8','x_4','x_10','x_11',
-#  'x_1','x_6','x_13','x_3','x_18','x_15','x_17','x_2','x_5']
-################
+    # 估计有用
+    # df['residentAddr56'] = df['residentAddr'].apply(lambda x: int(str(x)[4:]) if x != -999 else -999)
+    # df['residentAddr56_basicLevel'] = df['residentAddr56'].astype(str) + df['basicLevel'].astype(str)
+    # df['residentAddr56_loanProduct'] = df['residentAddr56'].astype(str) + df['loanProduct'].astype(str)
+    # cols += ['residentAddr56_loanProduct']
+    # cols += ['residentAddr56_basicLevel', 'residentAddr56_loanProduct']
+    ####
 
 
-# 待尝试
-# 四个一起降分
-# df['certId12_job'] = df['certId12'].astype(str) + df['job'].astype(str)
-# df['certId12_ethnic'] = df['certId12'].astype(str) + df['ethnic'].astype(str)
-# cols += ['certId12_job', 'certId12_ethnic']
+    # df['certId12_lmt'] = df.groupby('certId12')['lmt'].transform('mean')
+    # df['certId12_lmt'] = df.groupby('certId12')['lmt'].transform('median')
 
-# df['certId12_edu'] = df['certId12'].astype(str) + df['edu'].astype(str)
-# df['certId12_highestEdu'] = df['certId12'].astype(str) + df['highestEdu'].astype(str)
-# cols += ['certId12_edu', 'certId12_highestEdu']
+    # df['certId34_lmt'] = df.groupby('certId34')['lmt'].transform('mean')
+    # df['certId34_lmt'] = df.groupby('certId34')['lmt'].transform('median')
 
-# df['edu_basicLevel'] = df['edu'].astype(str) + df['basicLevel'].astype(str)
-# df['edu_loanProduct'] = df['edu'].astype(str) + df['loanProduct'].astype(str)
-# df['edu_lmt'] = df.groupby('edu')['lmt'].transform('mean')
-# df['edu_lmt'] = df.groupby('edu')['lmt'].transform('median')
-# cols += ['edu_basicLevel', 'edu_loanProduct']
+    # df['certId56_lmt'] = df.groupby('certId56')['lmt'].transform('mean')
+    # df['certId56_lmt'] = df.groupby('certId56')['lmt'].transform('median')
 
-# df['highestEdu_basicLevel'] = df['highestEdu'].astype(str) + df['basicLevel'].astype(str)
-# df['highestEdu_loanProduct'] = df['highestEdu'].astype(str) + df['loanProduct'].astype(str)
-# df['highestEdu_lmt'] = df.groupby('highestEdu')['lmt'].transform('mean')
-# df['highestEdu_lmt'] = df.groupby('highestEdu')['lmt'].transform('median')
-# cols += ['highestEdu_basicLevel', 'highestEdu_loanProduct']
+    ################
+    # things not work
+    # df['certId12_edu'] = df['certId12'].astype(str) + df['edu'].astype(str)
+    # df['certId34_edu'] = df['certId34'].astype(str) + df['edu'].astype(str)
+    # df['certId56_edu'] = df['certId56'].astype(str) + df['edu'].astype(str)
+    # 'certId12_edu', 'certId34_edu','certId56_edu'
 
-
-for col in cols:
-    lab = LabelEncoder()
-    df[col] = lab.fit_transform(df[col]) 
-    
-cols += ['certId12', 'certId34', 'certId56', 'dist56', 'residentAddr56']
+    # useless = ['x_59','x_22','x_23','x_24','x_30','x_31','x_32','x_35','x_36','x_37','x_38','x_39','x_40','x_42',
+    #  'x_57','x_58','x_60','x_69','x_70','x_77','x_78','ncloseCreditCard','unpayIndvLoan','unpayOtherLoan',
+    #  'unpayNormalLoan','5yearBadloan','x_21','x_19','is_edu_equal','x_9','x_7','x_8','x_4','x_10','x_11',
+    #  'x_1','x_6','x_13','x_3','x_18','x_15','x_17','x_2','x_5']
+    ################
 
 
-cols += ['bankCard', 'residentAddr', 'certId', 'dist', 'age', 'job', 'basicLevel', 'loanProduct', 'val_period']
-# count
-for col in cols:
-    df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
+    # 待尝试
+    # 四个一起降分
+    # df['certId12_job'] = df['certId12'].astype(str) + df['job'].astype(str)
+    # df['certId12_ethnic'] = df['certId12'].astype(str) + df['ethnic'].astype(str)
+    # cols += ['certId12_job', 'certId12_ethnic']
+
+    # df['certId12_edu'] = df['certId12'].astype(str) + df['edu'].astype(str)
+    # df['certId12_highestEdu'] = df['certId12'].astype(str) + df['highestEdu'].astype(str)
+    # cols += ['certId12_edu', 'certId12_highestEdu']
+
+    # df['edu_basicLevel'] = df['edu'].astype(str) + df['basicLevel'].astype(str)
+    # df['edu_loanProduct'] = df['edu'].astype(str) + df['loanProduct'].astype(str)
+    # df['edu_lmt'] = df.groupby('edu')['lmt'].transform('mean')
+    # df['edu_lmt'] = df.groupby('edu')['lmt'].transform('median')
+    # cols += ['edu_basicLevel', 'edu_loanProduct']
+
+    # df['highestEdu_basicLevel'] = df['highestEdu'].astype(str) + df['basicLevel'].astype(str)
+    # df['highestEdu_loanProduct'] = df['highestEdu'].astype(str) + df['loanProduct'].astype(str)
+    # df['highestEdu_lmt'] = df.groupby('highestEdu')['lmt'].transform('mean')
+    # df['highestEdu_lmt'] = df.groupby('highestEdu')['lmt'].transform('median')
+    # cols += ['highestEdu_basicLevel', 'highestEdu_loanProduct']
 
 
-df['is_edu_equal'] = (df['edu'] == df['highestEdu']).astype(int)
+    for col in cols:
+        lab = LabelEncoder()
+        df[col] = lab.fit_transform(df[col])
 
-print(df.shape)
+    cols += ['certId12', 'certId34', 'certId56', 'dist56']
 
-feature = [fea for fea in df.columns if fea not in no_features +['begin', 'end']]
-train, test = df[:len(train)], df[len(train):]
+    cols += ['bankCard', 'residentAddr', 'certId', 'dist', 'age', 'job', 'basicLevel', 'loanProduct', 'val_period']
+    # count
+    for col in cols:
+        df['{}_count'.format(col)] = df.groupby(col)['id'].transform('count')
 
+    df['is_edu_equal'] = (df['edu'] == df['highestEdu']).astype(int)
 
+    print(df.shape)
+
+    feature = [fea for fea in df.columns if fea not in no_features + ['begin', 'end']]
+    train, test = df[:len(train)], df[len(train):]
+    return train,test,feature
+
+train,test,feature=load_xgb_data()
 import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import StratifiedKFold, KFold
@@ -168,18 +167,18 @@ for i, (train_index, valid_index) in enumerate(kfold.split(train[feature], train
 
     if i != 1:
         print(i)
-        X_train, y_train, X_valid, y_valid = train.loc[train_index][feature], train[label].loc[train_index], train.loc[valid_index][feature], train[label].loc[valid_index]
+        X_train, y_train, X_valid, y_valid = train.loc[train_index][feature], train[label].loc[train_index], \
+                                             train.loc[valid_index][feature], train[label].loc[valid_index]
 
-        bst = xgb.XGBClassifier(max_depth=3, n_estimators=10000, learning_rate=0.01, tree_method='gpu_hist')
-        bst.fit(X_train, y_train, eval_set=[(X_valid, y_valid)],eval_metric='auc',verbose=500, early_stopping_rounds=500)
-
+        bst = xgb.XGBClassifier(max_depth=3, n_estimators=10000,verbosity=1, learning_rate=0.01)
+        bst.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], eval_metric='auc', verbose=500,
+                early_stopping_rounds=500)
 
         y_pred_l1[i] = bst.predict_proba(test[feature])[:, 1]
         y_pred_all_l1 += y_pred_l1[i]
         y_scores += bst.best_score
-        
+
         fea_importances += bst.feature_importances_
-    
-        
+
 test['target'] = y_pred_all_l1 / 4
 print('average score is {}'.format(y_scores / 4))
