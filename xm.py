@@ -16,11 +16,12 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.metrics import roc_auc_score
 
-train = pd.read_csv("data/xm/train.csv")
-train_target = pd.read_csv('data/xm/train_target.csv')
+train = pd.read_csv("new_data/train.csv")
+train_target = pd.read_csv('new_data/train_target.csv')
 train = train.merge(train_target, on='id')
-test = pd.read_csv("data/xm/test.csv")
+test = pd.read_csv("new_data/test.csv")
 test['target'] = -1
 df = pd.concat([train, test], sort=False, axis=0)
 
@@ -87,6 +88,7 @@ cols += ['dist56_basicLevel', 'dist56_loanProduct']
 df['loanProduct_lmt'] = df.groupby('loanProduct')['lmt'].transform('mean')
 df['loanProduct_lmt'] = df.groupby('loanProduct')['lmt'].transform('median')
 
+
 ####
 # df['loanProduct_bankCard'] = df['loanProduct'].astype(str) + df['bankCard'].astype(str)
 # cols += ['loanProduct_bankCard']
@@ -142,6 +144,29 @@ df['loanProduct_lmt'] = df.groupby('loanProduct')['lmt'].transform('median')
 # df['highestEdu_lmt'] = df.groupby('highestEdu')['lmt'].transform('median')
 # cols += ['highestEdu_basicLevel', 'highestEdu_loanProduct']
 
+def Gini(y_true, y_pred):
+    # check and get number of samples
+    assert y_true.shape == y_pred.shape
+    n_samples = y_true.shape[0]
+
+    # sort rows on prediction column
+    # (from largest to smallest)
+    arr = np.array([y_true, y_pred]).transpose()
+    true_order = arr[arr[:, 0].argsort()][::-1, 0]
+    pred_order = arr[arr[:, 1].argsort()][::-1, 0]
+
+    # get Lorenz curves
+    L_true = np.cumsum(true_order) * 1. / np.sum(true_order)
+    L_pred = np.cumsum(pred_order) * 1. / np.sum(pred_order)
+    L_ones = np.linspace(1 / n_samples, 1, n_samples)
+
+    # get Gini coefficients (area between curves)
+    G_true = np.sum(L_ones - L_true)
+    G_pred = np.sum(L_ones - L_pred)
+
+    # normalize to true Gini coefficient
+    return G_pred * 1. / G_true
+
 
 for col in cols:
     lab = LabelEncoder()
@@ -166,26 +191,39 @@ y_scores = 0
 y_pred_l1 = np.zeros([n_fold, test.shape[0]])
 y_pred_all_l1 = np.zeros(test.shape[0])
 fea_importances = np.zeros(len(feature))
-
+auc_cv=[]
+gini_cv=[]
 label = ['target']
 kfold = StratifiedKFold(n_splits=n_fold, shuffle=True, random_state=1314)
 for i, (train_index, valid_index) in enumerate(kfold.split(train[feature], train[label])):
+    print(i)
+    X_train, y_train, X_valid, y_valid = train.loc[train_index][feature].values, train[label].values[train_index], \
+                                         train.loc[valid_index][feature].values, train[label].values[valid_index]
 
-    if i != 4:
-        print(i)
-        X_train, y_train, X_valid, y_valid = train.loc[train_index][feature], train[label].loc[train_index], \
-                                             train.loc[valid_index][feature], train[label].loc[valid_index]
+    bst = xgb.XGBClassifier(max_depth=3, n_estimators=10000, learning_rate=0.01,
+                            tree_method='gpu_hist'
+                            )
+    bst.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], eval_metric='auc', verbose=500,
+            early_stopping_rounds=500)
 
-        bst = xgb.XGBClassifier(max_depth=3, n_estimators=10000, learning_rate=0.01, tree_method='gpu_hist')
-        bst.fit(X_train, y_train, eval_set=[(X_valid, y_valid)], eval_metric='auc', verbose=500,
-                early_stopping_rounds=500)
+    y_pred_l1[i] = bst.predict_proba(test[feature].values)[:, 1]
+    y_pred_all_l1 += y_pred_l1[i]
+    y_scores += bst.best_score
 
-        y_pred_l1[i] = bst.predict_proba(test[feature])[:, 1]
-        y_pred_all_l1 += y_pred_l1[i]
-        y_scores += bst.best_score
+    y_pred = bst.predict_proba(X_valid)[:, 1]
 
-        fea_importances += bst.feature_importances_
+    # 评估
+    tmp_auc = roc_auc_score(y_valid, y_pred)
+    print("valid auc:", tmp_auc)
+    y_valid=y_valid.reshape(-1,)
+    tmp_gini = Gini(y_valid, y_pred)
+    print("valid gini:", tmp_gini)
+    auc_cv.append(tmp_auc)
+    gini_cv.append(tmp_gini)
+    fea_importances += bst.feature_importances_
 
+print("auc_cv",auc_cv)
+print("gini_cv",gini_cv)
 test['target'] = y_pred_all_l1 / 4
 print('average score is {}'.format(y_scores / 4))
 
